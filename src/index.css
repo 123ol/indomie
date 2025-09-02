@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Malvie';
+  src: url('/src/assets/fonts/Malvie.otf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('/src/assets/fonts/Gotham-Medium.otf') format('opentype');
+  font-weight: 500; /* Medium */
+  font-style: normal;
+}
