@@ -11,6 +11,7 @@ function BordGame({
   onGameEnd,
   onScoreDelta,
   onComboTriggered,
+  basketHeight,
   isMuted,
   volume,
 }) {
@@ -48,17 +49,22 @@ function BordGame({
   // Scaled game constants
   const scaled = useMemo(
     () => ({
-      basket: { offset: 60 * scale, w: 180 * scale, h: 33 * scale, speed: 7 * scale },
+      basket: { 
+        offset: basketHeight * scale, // Use basketHeight instead of fixed 60
+        w: 180 * scale, 
+        h: 150 * scale, 
+        speed: 7 * scale 
+      },
       entity: { minX: 20 * scale, r: 28 * scale, startY: 20 * scale },
-      lineWidth: 4 * scale, // Increased line width for bolder outlines
+      lineWidth: 4 * scale,
     }),
-    [scale]
+    [scale, basketHeight] // Add basketHeight to dependencies
   );
 
   // Game state refs
   const basketRef = useRef({
-    x: canvasW / 2 - (scaled.basket?.offset || 0),
-    y: canvasH - (scaled.basket?.offset || 0),
+    x: canvasW / 2 - (scaled.basket?.w || 0) / 2,
+    y: canvasH - (scaled.basket?.offset || 0), // Use scaled basket offset
     w: scaled.basket?.w || 0,
     h: scaled.basket?.h || 0,
     speed: scaled.basket?.speed || 0,

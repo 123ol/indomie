@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import backgroundImage from "../assets/Intro Background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
-import Crayfish from "../assets/crayfish frame.png";
+import Crayfish from "../assets/Crayfish.png";
 import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
 import Transition from "../assets/Na you get am.gif";
@@ -52,7 +52,7 @@ function Pack() {
 
   return (
     <div
-      className="w-full flex flex-col h-[120vh] p-24 "
+      className="w-full flex flex-col h-[100vh] md:h-[120vh] overflow-hidden p-12 "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -76,7 +76,7 @@ function Pack() {
       </motion.div>
 
       {/* Content */}
-      <div className="flex flex-col items-center justify-center space-y-6 pt-28">
+      <div className="flex flex-col items-center justify-center space-y-6 pt-36">
         {/* Title */}
         <motion.div
           className="text-center px-4 mb-16"
@@ -85,8 +85,8 @@ function Pack() {
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
           whileHover={{ scale: 1.05 }}
         >
-          <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie">
-            WHICH FLAVOR ARE <br />YOU HAVING FIRST?<br />
+          <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
+            WHICH FLAVOR ARE <br /> YOU HAVING FIRST?
           </p>
        
         </motion.div>
@@ -98,7 +98,7 @@ function Pack() {
               <motion.img
                 src={flavour.img}
                 alt={`${flavour.name} Pack`}
-                className="w-20 md:w-24 lg:w-28 object-contain cursor-pointer"
+                className="w-44 md:w-24 lg:w-28 object-contain cursor-pointer"
                 initial="hidden"
                 animate="visible"
                 variants={imageVariants}

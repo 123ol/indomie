@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Game from "./BordGame";
 import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, API_BASE, ENDPOINT_SAVE, ENDPOINT_FETCH, GAME_DURATION_SEC } from "./utils";
 import { Scorereveal, backgroundImage, replay, task } from "./assets";
+import indomieLogo from "../assets/Large Indomie log.png";
+import welldone from "../assets/Weldone.png";
 
 export default function GameTaskPage() {
   const [currentTask, setCurrentTask] = useState(1);
@@ -19,7 +21,8 @@ export default function GameTaskPage() {
   const [volume, setVolume] = useState(0.9);
   const [canvasSize, setCanvasSize] = useState({ w: 800, h: 520 });
   const [assetError, setAssetError] = useState(null);
-
+  const [basketHeight, setBasketHeight] = useState(150);
+  const [activeSection, setActiveSection] = useState(null); // Track active section
   const audioCatchRef = useRef(null);
   const audioObstacleRef = useRef(null);
   const audioComboRefs = useRef([]);
@@ -207,6 +210,7 @@ export default function GameTaskPage() {
     console.log(`Starting Task ${currentTask}`);
     setShowLeaderboard(false);
     setShowEndTask(false);
+    setActiveSection(null);
     setGameActive(true);
     setTimeLeft(GAME_DURATION_SEC);
     setComboGif(null);
@@ -221,8 +225,6 @@ export default function GameTaskPage() {
       const nextTask = prev + 1;
       console.log(`Transitioning to Task ${nextTask}`);
       if (nextTask <= 3) return nextTask;
-      setShowLeaderboard(true);
-      setShowEndTask(true);
       const entry = { score, player: "Player", date: new Date().toISOString() };
       saveHighScoreToServer(entry);
       return 4;
@@ -237,6 +239,7 @@ export default function GameTaskPage() {
     setGameActive(false);
     setShowLeaderboard(false);
     setShowEndTask(false);
+    setActiveSection(null);
     setComboGif(null);
   }, []);
 
@@ -259,26 +262,43 @@ export default function GameTaskPage() {
         </div>
       )}
       <div className="flex flex-wrap w-full max-w-4xl items-center justify-between mb-4 gap-4">
-        <div>
-          <p className="text-sm text-slate-600">Task {currentTask <= 3 ? currentTask : 3} • Score: {score}</p>
-        </div>
-      
+        {!gameActive && (
+          <motion.div
+            className="p-4"
+            initial={{ x: -100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            exit={{ opacity: 0 }}
+          >
+            <img
+              src={indomieLogo}
+              alt="Indomie Logo"
+              className="w-16 md:w-20 lg:w-24 h-auto"
+            />
+          </motion.div>
+        )}
       </div>
 
       <div className="w-full max-w-4xl rounded-2xl shadow p-4 sm:p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-sm text-slate-500">Task: {currentTask <= 3 ? currentTask : 3}</div>
-        </div>
-
-        {!gameActive ? (
+        {!gameActive && currentTask <= 3 && !activeSection ? (
           <div className="flex flex-col items-center pt-20">
-            <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
-              READY TO <br /> BECOME HOH?
-            </p>
-            <p className="text-white text-sm md:text-base lg:text-lg mt-4 leading-snug font-malvie">
-              ENTER ARENA
-            </p>
-            <img src={Scorereveal} alt="Main" className="w-80 rounded-lg mb-4" />
+            {currentTask === 1 && (
+              <>
+                <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
+                  READY TO <br /> BECOME HOH?
+                </p>
+                <p className="text-white text-2xl md:text-3xl lg:text-4xl font-bold my-4 leading-snug font-malvie">
+                  ENTER ARENA
+                </p>
+                <img src={Scorereveal} alt="Start Game" className="w-80 rounded-lg mb-4" />
+              </>
+            )}
+            {currentTask > 1 && currentTask <= 3 && (
+              <div className="flex flex-col items-center">
+                <p className="text-sm text-slate-600 mb-4">Task {currentTask} • Score: {score}</p>
+                <img src={Scorereveal} alt="Task Transition" className="w-80 rounded-lg mb-4" />
+              </div>
+            )}
             <div className="flex flex-wrap gap-3">
               {currentTask <= 3 && (
                 <button
@@ -307,32 +327,14 @@ export default function GameTaskPage() {
                   />
                 </button>
               )}
-              {currentTask > 3 && (
-                <>
-                  <button
-                    onClick={handleReplayAll}
-                    className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
-                  >
-                    Play Again
-                  </button>
-                  <button
-                    onClick={() => fetchLeaderboardFromServer().then(() => setShowLeaderboard(true))}
-                    className="px-5 py-2 rounded-2xl bg-purple-600 text-white"
-                  >
-                    Leaderboard
-                  </button>
-                  <button
-                    onClick={() => setShowEndTask(true)}
-                    className="px-5 py-2 rounded-2xl bg-rose-600 text-white"
-                  >
-                    End Task
-                  </button>
-                </>
-              )}
             </div>
           </div>
-        ) : (
+        ) : gameActive ? (
           <div className="relative">
+            <div className="flex justify-between mb-2">
+             
+              <p className="text-sm text-slate-600">Score: {score}</p>
+            </div>
             <Game
               canvasW={canvasSize.w}
               canvasH={canvasSize.h}
@@ -344,6 +346,7 @@ export default function GameTaskPage() {
               onComboTriggered={handleComboTriggered}
               isMuted={isMuted}
               volume={volume}
+              basketHeight={basketHeight}
             />
             <AnimatePresence>
               {comboGif && (
@@ -358,42 +361,83 @@ export default function GameTaskPage() {
               )}
             </AnimatePresence>
           </div>
-        )}
-
-        <div className="mt-6">
-          {showLeaderboard && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h3 className="text-xl font-bold mb-2">Leaderboard</h3>
-              <div className="p-4 rounded-xl border bg-white">
-                {leaderboard.length > 0 ? (
-                  <ol className="list-decimal ml-5 space-y-1">
-                    {leaderboard.map((entry, idx) => (
-                      <li key={idx}>
-                        <span className="font-medium">{entry.player ?? "Player"}</span>: {entry.score} pts{" "}
-                        <span className="text-slate-400 text-xs">
-                          ({new Date(entry.date).toLocaleDateString()})
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <div className="text-sm text-slate-500">No scores yet — play to create the first one!</div>
-                )}
+        ) : (
+          <>
+            {currentTask > 3 && !activeSection && (
+              <div className="flex flex-col items-center pt-20">
+                <img src={Scorereveal} alt="Task Transition" className="w-80 rounded-lg mb-4" />
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setActiveSection("endTask")}
+                    className="px-5 py-2 rounded-2xl bg-rose-600 text-white"
+                  >
+                    End Task
+                  </button>
+                  <button
+                    onClick={() => {
+                      fetchLeaderboardFromServer();
+                      setActiveSection("leaderboard");
+                    }}
+                    className="px-5 py-2 rounded-2xl bg-purple-600 text-white"
+                  >
+                    Leaderboard
+                  </button>
+                  <button
+                    onClick={handleReplayAll}
+                    className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
+                  >
+                    Play Again
+                  </button>
+                </div>
               </div>
-            </motion.div>
-          )}
-
-          {showEndTask && currentTask > 3 && (
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="mt-4 text-center"
-            >
-              <h2 className="text-2xl font-bold">Well Done!</h2>
-              <p className="text-lg text-slate-600 mt-2">Your final score: {score}</p>
-            </motion.div>
-          )}
-        </div>
+            )}
+            {activeSection === "endTask" && (
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex flex-col items-center pt-20"
+              >
+               
+                <img src={welldone} alt="End Task" className="w-80 rounded-lg mt-4" />
+                 <button
+                    onClick={handleReplayAll}
+                    className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
+                  >
+                    Play Again
+                  </button>
+              </motion.div>
+            )}
+            {activeSection === "leaderboard" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xl font-bold">Leaderboard</h3>
+                  <button
+                    onClick={() => setActiveSection(null)}
+                    className="px-4 py-1 rounded-2xl bg-gray-600 text-white"
+                  >
+                    Back
+                  </button>
+                </div>
+                <div className="p-4 rounded-xl border bg-white">
+                  {leaderboard.length > 0 ? (
+                    <ol className="list-decimal ml-5 space-y-1">
+                      {leaderboard.map((entry, idx) => (
+                        <li key={idx}>
+                          <span className="font-medium">{entry.player ?? "Player"}</span>: {entry.score} pts{" "}
+                          <span className="text-slate-400 text-xs">
+                            ({new Date(entry.date).toLocaleDateString()})
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <div className="text-sm text-slate-500">No scores yet — play to create the first one!</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

@@ -109,7 +109,7 @@ function Rules() {
                 onClick={handleNext}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="flex items-center justify-center"
+                className="flex items-end justify-end w-[100%]"
               >
                 <motion.img
                   src={Right}
@@ -143,7 +143,7 @@ function Rules() {
 
               {/* Buttons Container */}
               <motion.div
-                className="flex items-center justify-center space-x-4 md:space-x-6"
+                className="flex items-start w-[100%] justify-start gap-10 space-x-6 md:space-x-6"
                 variants={sectionVariants}
                 custom={direction}
               >
@@ -172,7 +172,7 @@ function Rules() {
                     <motion.img
                       src={ContinueButton}
                       alt="Continue Button"
-                      className="w-36 md:w-48 lg:w-56 object-contain"
+                      className="w-48 md:w-48 lg:w-56 object-contain"
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
                     />

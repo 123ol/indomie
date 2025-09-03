@@ -100,11 +100,11 @@ function Housemate() {
         >
           {/* Title */}
           <motion.h2
-            className="text-2xl md:text-3xl font-bold text-white"
+            className="text-2xl md:text-3xl font-bold text-yellow-400 leading-snug font-malvie mb-16"
             variants={imageVariants}
             custom={0}
           >
-            Choose Your Housemate
+            Choose  Housemate
           </motion.h2>
 
           {/* Housemate Images */}
@@ -114,7 +114,7 @@ function Housemate() {
                 <motion.img
                   src={housemate.img}
                   alt={`${housemate.name} Image`}
-                  className="w-32 md:w-40 lg:w-48 object-contain cursor-pointer"
+                  className="w-32 md:w-40 lg:w-48 object-contain cursor-pointer mb-6"
                   variants={imageVariants}
                   initial="hidden"
                   animate="visible"
@@ -124,7 +124,7 @@ function Housemate() {
                 <AnimatePresence>
                   {selectedHousemate === housemate.name && (
                     <motion.div
-                      className="absolute inset-0 border-4 border-[#FF4040] rounded-lg"
+                      className="absolute inset-0 border-4 border-[#FF4040] rounded-lg mb-4"
                       initial="hidden"
                       animate="visible"
                       exit="hidden"

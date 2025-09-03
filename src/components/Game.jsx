@@ -3,7 +3,7 @@ import indomipack1 from "../assets/Crayfish.png";
 import indomipack2 from "../assets/Oriental Noodle.png";
 import indomipack3 from "../assets/Pepper soup noodle.png";
 import indomiplate from "../assets/Food.png";
-import playButton from "../assets/Play Again.png";
+import playButton from "../assets/Play now.png";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
@@ -100,7 +100,7 @@ function Game() {
 
   return (
     <div
-      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover", 
@@ -122,10 +122,7 @@ function Game() {
           className="w-16 md:w-20 lg:w-24 h-auto"
         />
       </motion.div>
-
-      {/* Middle: Game area */}
-      <div className="flex flex-col items-center justify-center space-y-6 pt-10 md:pt-40">
-        {/* Title */}
+      <div className="flex flex-col items-center justify-center space-y-6 pt-24 md:pt-40">
         <motion.div
           className="text-center px-4 mb-44 md:mb-40"
           initial={{ y: -50, opacity: 0 }}
