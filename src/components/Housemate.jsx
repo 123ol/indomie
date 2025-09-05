@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import backgroundImage from "../assets/Intro Background.png";
@@ -12,20 +11,53 @@ import Housemate2 from "../assets/Female Charater.png"; // Placeholder for secon
 function Housemate() {
   const navigate = useNavigate();
   const [showWave, setShowWave] = useState(false);
-  const [selectedHousemate, setSelectedHousemate] = useState(null);
+  const [selectedHousemate, setSelectedHousemate] = useState(() => {
+    try {
+      const saved = localStorage.getItem("selectedHousemate");
+      if (saved) {
+        console.log(`Loaded selectedHousemate from localStorage: ${saved}`);
+        return saved;
+      }
+      console.log("No selectedHousemate in localStorage, initializing with null");
+      return null;
+    } catch (error) {
+      console.error("Failed to initialize selectedHousemate from localStorage:", error);
+      return null;
+    }
+  });
+  const [notification, setNotification] = useState(null);
 
   const handleHousemateSelect = (housemate) => {
-    console.log("Selected:", housemate); // Debug log
+    console.log("Selected:", housemate);
     setSelectedHousemate(housemate);
+    try {
+      localStorage.setItem("selectedHousemate", housemate);
+      console.log(`Saved selectedHousemate to localStorage: ${housemate}`);
+    } catch (error) {
+      console.error("Failed to save selectedHousemate to localStorage:", error);
+      setNotification({ type: "error", message: "Failed to save housemate selection." });
+    }
   };
 
   const handleContinue = () => {
-    console.log("Selected Housemate:", selectedHousemate); // Debug log
+    console.log("Selected Housemate:", selectedHousemate);
+    if (!selectedHousemate) {
+      setNotification({ type: "error", message: "Please select a housemate before continuing." });
+      return;
+    }
     setShowWave(true);
     setTimeout(() => {
       navigate("/gameTask");
     }, 1200);
   };
+
+  // Clear notification after 5 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // Housemates array
   const housemates = [
@@ -45,7 +77,7 @@ function Housemate() {
         ease: "easeOut",
         type: "spring",
         bounce: 0.4,
-        delay: i * 0.2, // Staggered entrance
+        delay: i * 0.2,
       },
     }),
   };
@@ -73,6 +105,20 @@ function Housemate() {
         width: "100%",
       }}
     >
+      {/* Notification */}
+      {notification && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`absolute top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg text-white ${
+            notification.type === "error" ? "bg-red-500" : "bg-blue-500"
+          }`}
+        >
+          {notification.message}
+        </motion.div>
+      )}
+
       {/* Top: Logo */}
       <motion.div
         className="p-4"
@@ -104,7 +150,7 @@ function Housemate() {
             variants={imageVariants}
             custom={0}
           >
-            Choose  Housemate
+            Choose Housemate
           </motion.h2>
 
           {/* Housemate Images */}
@@ -146,21 +192,19 @@ function Housemate() {
                 animate="visible"
                 exit="hidden"
               >
-                <Link to="/gameTask">
-                  <motion.button
-                    onClick={handleContinue}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <motion.img
-                      src={ContinueButton}
-                      alt="Continue Button"
-                      className="w-36 md:w-48 lg:w-56 object-contain"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-                    />
-                  </motion.button>
-                </Link>
+                <motion.button
+                  onClick={handleContinue}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <motion.img
+                    src={ContinueButton}
+                    alt="Continue Button"
+                    className="w-36 md:w-48 lg:w-56 object-contain"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+                  />
+                </motion.button>
               </motion.div>
             )}
           </AnimatePresence>

@@ -134,7 +134,7 @@ function Game() {
             CATCH YOUR <br /> INDOMIE FLAVOR
           </p>
           <p className="text-white text-sm md:text-base lg:text-lg mt-4 font-gotham">
-            PICK A FLAVOR. PLAY THE GAME
+            AND BECOM
           </p>
         </motion.div>
 
