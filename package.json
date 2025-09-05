@@ -11,10 +11,13 @@
   },
   "dependencies": {
     "axios": "^1.11.0",
+    "firebase": "^12.2.1",
     "framer-motion": "^12.23.12",
     "gsap": "^3.13.0",
+    "lodash": "^4.17.21",
     "matter-js": "^0.20.0",
     "motion": "^12.23.12",
+    "p5": "^2.0.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.1",

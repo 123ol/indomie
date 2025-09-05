@@ -50,7 +50,7 @@ function BordGame({
   const scaled = useMemo(
     () => ({
       basket: { 
-        offset: basketHeight * scale, // Use basketHeight instead of fixed 60
+        offset: basketHeight * scale,
         w: 180 * scale, 
         h: 150 * scale, 
         speed: 7 * scale 
@@ -58,13 +58,13 @@ function BordGame({
       entity: { minX: 20 * scale, r: 28 * scale, startY: 20 * scale },
       lineWidth: 4 * scale,
     }),
-    [scale, basketHeight] // Add basketHeight to dependencies
+    [scale, basketHeight]
   );
 
   // Game state refs
   const basketRef = useRef({
     x: canvasW / 2 - (scaled.basket?.w || 0) / 2,
-    y: canvasH - (scaled.basket?.offset || 0), // Use scaled basket offset
+    y: canvasH - (scaled.basket?.offset || 0),
     w: scaled.basket?.w || 0,
     h: scaled.basket?.h || 0,
     speed: scaled.basket?.speed || 0,
@@ -138,18 +138,21 @@ function BordGame({
   // Spawn fruits & obstacles
   useEffect(() => {
     runningRef.current = true;
+    const bombProbability = currentTask === 1 ? 0.4 : currentTask === 2 ? 0.5 : 0.6; // Increased bomb probability
     const spawn = () => {
       if (!runningRef.current) return;
-      const isObstacle = Math.random() < 0.22;
+      const isObstacle = Math.random() < bombProbability;
       const x = rand(scaled.entity.minX, canvasW - scaled.entity.minX);
       const vy = (baseFallSpeed + rand(0, 1.8)) * scale;
 
       if (isObstacle) {
         const bombType = BOMBS[Math.floor(Math.random() * BOMBS.length)];
         obstaclesRef.current.push({ x, y: -scaled.entity.startY, vy, r: scaled.entity.r, type: bombType });
+        console.log(`Spawned bomb (${bombType}) at x: ${x}, Task: ${currentTask}`);
       } else {
         const type = FRUITS[Math.floor(Math.random() * FRUITS.length)];
         fruitsRef.current.push({ x, y: -scaled.entity.startY, vy, r: scaled.entity.r, type });
+        console.log(`Spawned fruit (${type}) at x: ${x}, Task: ${currentTask}`);
       }
     };
 
@@ -158,7 +161,7 @@ function BordGame({
       clearInterval(spawnIntervalRef.current);
       runningRef.current = false;
     };
-  }, [baseFallSpeed, canvasW, scale]);
+  }, [baseFallSpeed, canvasW, scale, currentTask]);
 
   // Timer countdown
   useEffect(() => {
@@ -199,12 +202,10 @@ function BordGame({
     const drawBasket = (basket) => {
       if (images.basket.complete) {
         ctx.save();
-        // Add drop shadow
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
         ctx.shadowBlur = 5 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        // Draw image
         ctx.drawImage(
           images.basket,
           basket.x / scale,
@@ -212,8 +213,6 @@ function BordGame({
           basket.w / scale,
           basket.h / scale
         );
-        // Add outline
-       
         ctx.restore();
       }
     };
@@ -222,12 +221,10 @@ function BordGame({
       const img = images[fruit.type];
       if (img?.complete) {
         ctx.save();
-        // Add drop shadow
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
         ctx.shadowBlur = 5 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        // Draw image
         ctx.drawImage(
           img,
           (fruit.x - fruit.r) / scale,
@@ -235,7 +232,6 @@ function BordGame({
           (fruit.r * 2) / scale,
           (fruit.r * 2) / scale
         );
-        
       }
     };
 
@@ -243,12 +239,10 @@ function BordGame({
       const img = images[obstacle.type];
       if (img?.complete) {
         ctx.save();
-        // Add drop shadow
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
         ctx.shadowBlur = 5 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
-        // Draw image
         ctx.drawImage(
           img,
           (obstacle.x - obstacle.r) / scale,
@@ -256,7 +250,6 @@ function BordGame({
           (obstacle.r * 2) / scale,
           (obstacle.r * 2) / scale
         );
-      
       }
     };
 
@@ -331,9 +324,12 @@ function BordGame({
 
   return (
     <div className="relative w-full overflow-hidden">
-      <div className="absolute top-2 right-3 z-10 bg-black/40 text-white text-sm px-3 py-1 rounded-full">
-        Time Left: {timeLeft}s
-      </div>
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 
+  bg-black text-white text-sm w-14 h-14 flex items-center justify-center rounded-full border-4 border-white">
+  {timeLeft}
+</div>
+
+
       <canvas
         ref={canvasRef}
         width={canvasW}

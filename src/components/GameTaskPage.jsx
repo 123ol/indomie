@@ -1,17 +1,26 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { auth, db } from "../firebase";
+import { collection, doc, setDoc, query, orderBy, limit, getDocs, where, onSnapshot, getDoc } from "firebase/firestore";
 import Game from "./BordGame";
-import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, API_BASE, ENDPOINT_SAVE, ENDPOINT_FETCH, GAME_DURATION_SEC } from "./utils";
+import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, GAME_DURATION_SEC } from "./utils";
 import { Scorereveal, backgroundImage, replay, task } from "./assets";
 import indomieLogo from "../assets/Large Indomie log.png";
 import welldone from "../assets/Weldone.png";
+import leaderboard1 from "../assets/Leaderboard button.png";
+import EndTask from "../assets/End task.png";
+import share from "../assets/Share button.png";
+import left from "../assets/Left Button.png";
 
 export default function GameTaskPage() {
   const [currentTask, setCurrentTask] = useState(1);
   const [score, setScore] = useState(0);
+  const [completedTaskScores, setCompletedTaskScores] = useState([0, 0, 0]);
   const [gameActive, setGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION_SEC);
+  const [lives, setLives] = useState(3);
+  const [gameOver, setGameOver] = useState(false);
   const [comboGif, setComboGif] = useState(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showEndTask, setShowEndTask] = useState(false);
@@ -22,10 +31,41 @@ export default function GameTaskPage() {
   const [canvasSize, setCanvasSize] = useState({ w: 800, h: 520 });
   const [assetError, setAssetError] = useState(null);
   const [basketHeight, setBasketHeight] = useState(150);
-  const [activeSection, setActiveSection] = useState(null); // Track active section
+  const [activeSection, setActiveSection] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [leaderboardFilter, setLeaderboardFilter] = useState("all");
+  const [notification, setNotification] = useState(null); // New state for notifications
+
+  const navigate = useNavigate();
   const audioCatchRef = useRef(null);
   const audioObstacleRef = useRef(null);
   const audioComboRefs = useRef([]);
+
+  // Monitor authentication state
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user);
+      if (!user) {
+        console.warn("No authenticated user found, redirecting to login");
+        navigate("/form");
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  // Clear notification after 5 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const getPreviousSum = useCallback((taskNumber) => {
+    const sum = completedTaskScores.slice(0, taskNumber - 1).reduce((a, b) => a + b, 0);
+    console.log(`Calculating previous sum for task ${taskNumber}: ${completedTaskScores.slice(0, taskNumber - 1)}, Sum: ${sum}`);
+    return sum;
+  }, [completedTaskScores]);
 
   // Responsive canvas sizing
   useEffect(() => {
@@ -47,12 +87,12 @@ export default function GameTaskPage() {
     let mounted = true;
     audioCatchRef.current = new Audio(SOUND_CATCH);
     audioObstacleRef.current = new Audio(SOUND_OBSTACLE);
-    audioComboRefs.current = COMBO_SOUNDS.map(src => new Audio(src));
+    audioComboRefs.current = COMBO_SOUNDS.map((src) => new Audio(src));
 
     const setAudioVolume = () => {
       audioCatchRef.current.volume = volume;
       audioObstacleRef.current.volume = volume;
-      audioComboRefs.current.forEach(audio => audio.volume = volume);
+      audioComboRefs.current.forEach((audio) => (audio.volume = volume));
     };
     setAudioVolume();
 
@@ -109,9 +149,6 @@ export default function GameTaskPage() {
       }
     });
 
-    const saved = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-    setLeaderboard(saved);
-
     return () => {
       mounted = false;
     };
@@ -141,60 +178,163 @@ export default function GameTaskPage() {
   useEffect(() => {
     if (audioCatchRef.current) audioCatchRef.current.volume = volume;
     if (audioObstacleRef.current) audioObstacleRef.current.volume = volume;
-    audioComboRefs.current.forEach(audio => audio.volume = volume);
+    audioComboRefs.current.forEach((audio) => (audio.volume = volume));
   }, [volume]);
 
-  // REST API handlers
-  const fetchLeaderboardFromServer = useCallback(async () => {
+  // Firestore handlers
+  const fetchLeaderboardFromServer = useCallback(() => {
     try {
-      const res = await axios.get(ENDPOINT_FETCH, { timeout: 5000 });
-      if (Array.isArray(res.data)) {
-        setLeaderboard(res.data.slice(0, 10));
-        localStorage.setItem("leaderboard", JSON.stringify(res.data.slice(0, 10)));
-        return res.data.slice(0, 10);
-      }
-    } catch (err) {
-      console.warn("Failed to fetch leaderboard, using local storage", err?.message);
-      const local = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-      setLeaderboard(local);
-      return local;
-    }
-  }, []);
-
-  const saveHighScoreToServer = useCallback(async (entry) => {
-    try {
-      const res = await axios.post(ENDPOINT_SAVE, entry, { timeout: 5000 });
-      if (res?.data && Array.isArray(res.data)) {
-        setLeaderboard(res.data.slice(0, 10));
-        localStorage.setItem("leaderboard", JSON.stringify(res.data.slice(0, 10)));
+      let q;
+      if (leaderboardFilter === "week") {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        q = query(
+          collection(db, "scores"),
+          where("date", ">=", oneWeekAgo.toISOString()),
+          orderBy("date", "desc"),
+          orderBy("score", "desc"),
+          limit(10)
+        );
+      } else if (leaderboardFilter === "month") {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        q = query(
+          collection(db, "scores"),
+          where("date", ">=", oneMonthAgo.toISOString()),
+          orderBy("date", "desc"),
+          orderBy("score", "desc"),
+          limit(10)
+        );
       } else {
-        await fetchLeaderboardFromServer();
+        q = query(collection(db, "scores"), orderBy("score", "desc"), limit(10));
       }
+
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const leaderboardData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setLeaderboard(leaderboardData);
+        console.log(`Fetched ${leaderboardFilter} leaderboard:`, leaderboardData);
+      }, (err) => {
+        console.error("Failed to fetch leaderboard from Firestore:", err.message);
+        setLeaderboard([]);
+        setNotification({ type: "error", message: "Failed to load leaderboard: " + err.message });
+      });
+
+      return () => unsubscribe();
     } catch (err) {
-      console.warn("Failed to save high score, saving locally", err?.message);
-      const local = JSON.parse(localStorage.getItem("leaderboard") || "[]");
-      const updated = [...local, entry].sort((a, b) => b.score - a.score).slice(0, 10);
-      localStorage.setItem("leaderboard", JSON.stringify(updated));
-      setLeaderboard(updated);
+      console.error("Failed to fetch leaderboard from Firestore:", err.message);
+      setLeaderboard([]);
+      setNotification({ type: "error", message: "Failed to load leaderboard: " + err.message });
     }
-  }, [fetchLeaderboardFromServer]);
+  }, [leaderboardFilter]);
+
+  const saveHighScoreToServer = useCallback(
+    async (entry) => {
+      if (!currentUser) {
+        console.warn("No authenticated user, redirecting to login");
+        navigate("/form");
+        return;
+      }
+      try {
+        const scoreEntry = {
+          ...entry,
+          player: currentUser.displayName || "Player",
+          uid: currentUser.uid,
+          date: new Date().toISOString(),
+        };
+        const scoreDocRef = doc(db, "scores", currentUser.uid);
+        const scoreDoc = await getDoc(scoreDocRef);
+
+        if (scoreDoc.exists()) {
+          const existingScore = scoreDoc.data().score;
+          console.log(`Existing score: ${existingScore}, New score: ${scoreEntry.score}`);
+          if (existingScore >= scoreEntry.score) {
+            console.log(`New score (${scoreEntry.score}) is not higher than existing score (${existingScore}), skipping update`);
+            setNotification({
+              type: "info",
+              message: `Your score of ${scoreEntry.score} is not higher than your previous score of ${existingScore}. Keep trying!`,
+            });
+            await fetchLeaderboardFromServer();
+            return;
+          }
+        }
+
+        await setDoc(scoreDocRef, scoreEntry, { merge: true });
+        console.log(`Saved score to Firestore: ${scoreEntry.score}`);
+        setNotification({ type: "success", message: `New high score of ${scoreEntry.score} saved!` });
+        await fetchLeaderboardFromServer();
+      } catch (err) {
+        console.error("Failed to save score to Firestore:", err.message);
+        setNotification({ type: "error", message: "Failed to save score: " + err.message });
+      }
+    },
+    [currentUser, fetchLeaderboardFromServer, navigate]
+  );
+
+  // Save task score to completedTaskScores
+  const saveTaskScore = useCallback(() => {
+    const previousSum = getPreviousSum(currentTask);
+    const contribution = Math.max(0, score - previousSum);
+    console.log(`Saving score for Task ${currentTask}: Contribution: ${contribution}, Previous sum: ${previousSum}`);
+    setCompletedTaskScores((prev) => {
+      const newScores = [...prev];
+      newScores[currentTask - 1] = contribution;
+      const totalScore = newScores.reduce((a, b) => a + b, 0);
+      console.log(`Updated scores: ${newScores}, Total: ${totalScore}`);
+      setScore(totalScore);
+      return newScores;
+    });
+  }, [score, currentTask, getPreviousSum]);
 
   // Gameplay handlers
-  const handleScoreDelta = useCallback(
-    (delta) => {
+  const debouncedHandleScoreDelta = useCallback(
+    debounce((delta) => {
+      console.log(`Score delta: ${delta}, Current lives: ${lives}, Task: ${currentTask}`);
       if (delta > 0) {
         if (delta >= 30) playCombo();
         else playCatch();
-      } else if (delta < 0) {
+        setScore((prev) => {
+          const newScore = Math.max(0, prev + delta);
+          console.log(`Score updated to ${newScore}`);
+          return newScore;
+        });
+      } else if (delta < 0 && score > 0) {
         playObstacle();
+        setLives((prev) => {
+          const newLives = Math.max(0, prev - 1);
+          console.log(`Lives reduced to ${newLives}`);
+          if (newLives === 0) {
+            setGameActive(false);
+            saveTaskScore();
+            if (currentTask === 3) {
+              console.log("Task 3 ended with 0 lives, going to end game section");
+              const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
+              const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
+              console.log(`Saving final score to leaderboard: ${totalScore}`);
+              saveHighScoreToServer(entry);
+              setCurrentTask(4);
+            } else {
+              console.log(`Task ${currentTask} ended with 0 lives, showing game over`);
+              setGameOver(true);
+            }
+          }
+          return newLives;
+        });
+        setScore((prev) => {
+          const newScore = Math.max(0, prev + delta);
+          console.log(`Score updated to ${newScore}`);
+          return newScore;
+        });
       }
-      setScore((prev) => Math.max(0, prev + delta));
-    },
-    [playCatch, playObstacle, playCombo]
+    }, 50),
+    [playCatch, playObstacle, playCombo, score, currentTask, lives, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]
   );
 
   const handleComboTriggered = useCallback(
     (gifUrl) => {
+      console.log(`Combo triggered with GIF: ${gifUrl}`);
       setComboGif(gifUrl);
       playCombo();
       setTimeout(() => setComboGif(null), 1400);
@@ -202,41 +342,64 @@ export default function GameTaskPage() {
     [playCombo]
   );
 
-  const startGame = useCallback(() => {
-    if (!isReady) {
-      console.log("Cannot start game: assets not ready");
-      return;
+  const startGame = useCallback(
+    (taskNumber) => {
+      if (!isReady) {
+        console.log("Cannot start game: assets not ready");
+        return;
+      }
+      const previousSum = getPreviousSum(taskNumber);
+      console.log(`Starting Task ${taskNumber} with score: ${previousSum}`);
+      setCurrentTask(taskNumber);
+      setScore(previousSum);
+      setShowLeaderboard(false);
+      setShowEndTask(false);
+      setActiveSection(null);
+      setGameActive(true);
+      setGameOver(false);
+      setLives(3);
+      setTimeLeft(GAME_DURATION_SEC);
+      setComboGif(null);
+    },
+    [isReady, getPreviousSum]
+  );
+
+  const advanceTask = useCallback(() => {
+    const nextTask = currentTask + 1;
+    console.log(`Advancing from Task ${currentTask} to Task ${nextTask}`);
+    if (nextTask <= 3) {
+      startGame(nextTask);
     }
-    console.log(`Starting Task ${currentTask}`);
-    setShowLeaderboard(false);
-    setShowEndTask(false);
-    setActiveSection(null);
-    setGameActive(true);
-    setTimeLeft(GAME_DURATION_SEC);
-    setComboGif(null);
-  }, [currentTask, isReady]);
+  }, [currentTask, startGame]);
 
   const handleGameEnd = useCallback(() => {
-    console.log(`Game ended for Task ${currentTask}`);
+    console.log(`Game ended for Task ${currentTask}, current score: ${score}`);
     setGameActive(false);
     setTimeLeft(GAME_DURATION_SEC);
     setComboGif(null);
-    setCurrentTask((prev) => {
-      const nextTask = prev + 1;
-      console.log(`Transitioning to Task ${nextTask}`);
-      if (nextTask <= 3) return nextTask;
-      const entry = { score, player: "Player", date: new Date().toISOString() };
+    saveTaskScore();
+    if (currentTask === 3) {
+      console.log("Task 3 completed, going to end game section");
+      const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
+      const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
+      console.log(`Saving final score to leaderboard: ${totalScore}`);
       saveHighScoreToServer(entry);
-      return 4;
-    });
-  }, [score, saveHighScoreToServer]);
+      setCurrentTask(4);
+    } else {
+      console.log(`Task ${currentTask} completed, showing task transition section`);
+      setGameOver(true);
+    }
+  }, [score, currentTask, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]);
 
   const handleReplayAll = useCallback(() => {
     console.log("Replaying all tasks from Task 1");
     setCurrentTask(1);
     setScore(0);
+    setCompletedTaskScores([0, 0, 0]);
     setTimeLeft(GAME_DURATION_SEC);
+    setLives(3);
     setGameActive(false);
+    setGameOver(false);
     setShowLeaderboard(false);
     setShowEndTask(false);
     setActiveSection(null);
@@ -261,6 +424,18 @@ export default function GameTaskPage() {
           {assetError}
         </div>
       )}
+      {notification && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`absolute top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg text-white ${
+            notification.type === "error" ? "bg-red-500" : notification.type === "success" ? "bg-green-500" : "bg-blue-500"
+          }`}
+        >
+          {notification.message}
+        </motion.div>
+      )}
       <div className="flex flex-wrap w-full max-w-4xl items-center justify-between mb-4 gap-4">
         {!gameActive && (
           <motion.div
@@ -282,7 +457,7 @@ export default function GameTaskPage() {
       <div className="w-full max-w-4xl rounded-2xl shadow p-4 sm:p-6">
         {!gameActive && currentTask <= 3 && !activeSection ? (
           <div className="flex flex-col items-center pt-20">
-            {currentTask === 1 && (
+            {currentTask === 1 && !gameOver ? (
               <>
                 <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
                   READY TO <br /> BECOME HOH?
@@ -291,18 +466,8 @@ export default function GameTaskPage() {
                   ENTER ARENA
                 </p>
                 <img src={Scorereveal} alt="Start Game" className="w-80 rounded-lg mb-4" />
-              </>
-            )}
-            {currentTask > 1 && currentTask <= 3 && (
-              <div className="flex flex-col items-center">
-                <p className="text-sm text-slate-600 mb-4">Task {currentTask} • Score: {score}</p>
-                <img src={Scorereveal} alt="Task Transition" className="w-80 rounded-lg mb-4" />
-              </div>
-            )}
-            <div className="flex flex-wrap gap-3">
-              {currentTask <= 3 && (
                 <button
-                  onClick={startGame}
+                  onClick={() => startGame(1)}
                   className={`p-0 rounded-2xl overflow-hidden ${
                     !isReady ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
                   }`}
@@ -310,31 +475,60 @@ export default function GameTaskPage() {
                 >
                   <img src={task} alt="Task button" className="w-48 h-full object-cover" />
                 </button>
-              )}
-              {currentTask > 1 && currentTask <= 3 && (
-                <button
-                  onClick={() => {
-                    console.log(`Replaying Task ${currentTask}`);
-                    setTimeLeft(GAME_DURATION_SEC);
-                    setGameActive(true);
-                    setComboGif(null);
-                  }}
-                >
-                  <img
-                    src={replay}
-                    alt="Replay Button"
-                    className="w-36 md:w-48 lg:w-56 object-contain"
-                  />
-                </button>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="flex space-x-4 mb-4">
+                  <div className="flex flex-col items-center">
+                    <span className="w-28 px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                      Score
+                    </span>
+                    <span className="min-w-[150px] px-4 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                      {score}
+                    </span>
+                  </div>
+                </div>
+
+                <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="w-80 rounded-lg mb-4" />
+                <div className="flex flex-wrap gap-3">
+                  {currentTask < 3 && (
+                    <button
+                      onClick={advanceTask}
+                      className={`p-0 rounded-2xl overflow-hidden ${
+                        !isReady ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
+                      }`}
+                      disabled={!isReady}
+                    >
+                      <img src={task} alt="Task button" className="w-48 h-full object-cover" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      console.log(`Replaying Task ${currentTask}`);
+                      startGame(currentTask);
+                    }}
+                    className="p-0 rounded-2xl overflow-hidden hover:brightness-110"
+                  >
+                    <img
+                      src={replay}
+                      alt="Replay Button"
+                      className="w-36 md:w-48 lg:w-56 object-contain"
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : gameActive ? (
           <div className="relative">
-            <div className="flex justify-between mb-2">
-             
-              <p className="text-sm text-slate-600">Score: {score}</p>
+            <div className="absolute top-2 -right-8 z-10 flex flex-col space-y-1 text-white text-sm px-3 py-2 rounded-lg">
+              <div className="flex flex-col items-center">
+                <span className="w-[100px] px-4 border border-orange-500 text-center text-xl font-extrabold rounded-lg">Score</span>
+                <span className="w-[150px] px-4 border border-orange-500 text-2xl text-center font-extrabold rounded-lg">{score}</span>
+              </div>
+              <p className="text-center text-3xl">{'❤️'.repeat(lives)}</p>
             </div>
+
             <Game
               canvasW={canvasSize.w}
               canvasH={canvasSize.h}
@@ -342,7 +536,7 @@ export default function GameTaskPage() {
               timeLeft={timeLeft}
               setTimeLeft={setTimeLeft}
               onGameEnd={handleGameEnd}
-              onScoreDelta={handleScoreDelta}
+              onScoreDelta={debouncedHandleScoreDelta}
               onComboTriggered={handleComboTriggered}
               isMuted={isMuted}
               volume={volume}
@@ -365,28 +559,27 @@ export default function GameTaskPage() {
           <>
             {currentTask > 3 && !activeSection && (
               <div className="flex flex-col items-center pt-20">
-                <img src={Scorereveal} alt="Task Transition" className="w-80 rounded-lg mb-4" />
+                <div className="flex flex-col items-center mb-4">
+                  <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                    Final Score
+                  </span>
+                  <span className="min-w-[200px] px-4 py-1 border border-orange-500 text-center text-xl text-white font-extrabold rounded-lg">
+                    {score}
+                  </span>
+                </div>
+                <img src={Scorereveal} alt="End Game" className="w-80 rounded-lg mb-4" />
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => setActiveSection("endTask")}
-                    className="px-5 py-2 rounded-2xl bg-rose-600 text-white"
-                  >
-                    End Task
+                  <button onClick={() => setActiveSection("endTask")}>
+                    <img src={EndTask} alt="End Task" className="w-36 rounded-lg mt-4" />
                   </button>
                   <button
                     onClick={() => {
+                      console.log("Fetching leaderboard");
                       fetchLeaderboardFromServer();
                       setActiveSection("leaderboard");
                     }}
-                    className="px-5 py-2 rounded-2xl bg-purple-600 text-white"
                   >
-                    Leaderboard
-                  </button>
-                  <button
-                    onClick={handleReplayAll}
-                    className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
-                  >
-                    Play Again
+                    <img src={leaderboard1} alt="leader" className="w-36 rounded-lg mt-4" />
                   </button>
                 </div>
               </div>
@@ -397,42 +590,111 @@ export default function GameTaskPage() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="flex flex-col items-center pt-20"
               >
-               
                 <img src={welldone} alt="End Task" className="w-80 rounded-lg mt-4" />
-                 <button
-                    onClick={handleReplayAll}
-                    className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
-                  >
-                    Play Again
-                  </button>
+                <button
+                  onClick={handleReplayAll}
+                  className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
+                >
+                  Play Again
+                </button>
               </motion.div>
             )}
             {activeSection === "leaderboard" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-xl font-bold">Leaderboard</h3>
-                  <button
-                    onClick={() => setActiveSection(null)}
-                    className="px-4 py-1 rounded-2xl bg-gray-600 text-white"
-                  >
-                    Back
-                  </button>
-                </div>
-                <div className="p-4 rounded-xl border bg-white">
-                  {leaderboard.length > 0 ? (
-                    <ol className="list-decimal ml-5 space-y-1">
-                      {leaderboard.map((entry, idx) => (
-                        <li key={idx}>
-                          <span className="font-medium">{entry.player ?? "Player"}</span>: {entry.score} pts{" "}
-                          <span className="text-slate-400 text-xs">
-                            ({new Date(entry.date).toLocaleDateString()})
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <div className="text-sm text-slate-500">No scores yet — play to create the first one!</div>
-                  )}
+                <div className="flex flex-col items-center min-h-screen py-6">
+                  <div className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
+                    <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
+
+                    <div className="flex justify-center gap-2 mb-6">
+                      <button
+                        className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          leaderboardFilter === "all" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                        }`}
+                        onClick={() => setLeaderboardFilter("all")}
+                      >
+                        All time
+                      </button>
+                      <button
+                        className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          leaderboardFilter === "week" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                        }`}
+                        onClick={() => setLeaderboardFilter("week")}
+                      >
+                        This Week
+                      </button>
+                      <button
+                        className={`px-3 py-1 rounded-full text-sm font-bold ${
+                          leaderboardFilter === "month" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                        }`}
+                        onClick={() => setLeaderboardFilter("month")}
+                      >
+                        This Month
+                      </button>
+                    </div>
+
+                    {leaderboard.length > 0 ? (
+                      <>
+                        <div className="flex justify-center items-end gap-4 mb-6">
+                          {leaderboard[1] && (
+                            <div className="flex flex-col items-center">
+                              <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
+                                2
+                              </div>
+                              <p className="text-xs text-white mt-1">@{leaderboard[1].player}</p>
+                              <p className="text-yellow-400 font-bold">{leaderboard[1].score}</p>
+                            </div>
+                          )}
+                          {leaderboard[0] && (
+                            <div className="flex flex-col items-center">
+                              <div className="w-24 h-24 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-2xl relative">
+                                👑
+                              </div>
+                              <p className="text-xs text-white mt-1">@{leaderboard[0].player}</p>
+                              <p className="text-yellow-400 font-bold">{leaderboard[0].score}</p>
+                            </div>
+                          )}
+                          {leaderboard[2] && (
+                            <div className="flex flex-col items-center">
+                              <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
+                                3
+                              </div>
+                              <p className="text-xs text-white mt-1">@{leaderboard[2].player}</p>
+                              <p className="text-yellow-400 font-bold">{leaderboard[2].score}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          {leaderboard.slice(3, 8).map((entry, idx) => (
+                            <div
+                              key={entry.id}
+                              className="flex items-center justify-between bg-[#5A2F12] text-white px-3 py-2 rounded-lg"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
+                                  {idx + 4}
+                                </span>
+                                <span>@{entry.player}</span>
+                              </div>
+                              <span className="text-yellow-400 font-bold">{entry.score} pts</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-slate-300">No scores yet — play to create the first one!</div>
+                    )}
+                  </div>
+                  <div className="mt-6 flex gap-4">
+                    <button
+                      onClick={() => setActiveSection(null)}
+                      className="text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md"
+                    >
+                      <img src={left} alt="Back" className="w-16 rounded-lg mt-4" />
+                    </button>
+                    <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md">
+                      <img src={share} alt="Share" className="w-40 rounded-lg mt-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
