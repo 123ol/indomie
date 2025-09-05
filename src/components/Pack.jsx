@@ -7,19 +7,36 @@ import ContinueButton from "../assets/Continue.png";
 import Crayfish from "../assets/Crayfish.png";
 import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
-import Transition from "../assets/Na you get am.gif";
 
 function Pack() {
   const navigate = useNavigate();
   const [showWave, setShowWave] = useState(false);
   const [selectedFlavor, setSelectedFlavor] = useState(null); // Track selected flavor
 
- const handleContinue = () => {
+  const handleContinue = () => {
+    if (!selectedFlavor) {
+      console.warn("No flavor selected, cannot continue");
+      return;
+    }
     setShowWave(true);
     setTimeout(() => {
       navigate("/form");
     }, 1200);
   };
+
+  // Save selected flavor to localStorage
+  const handleFlavorSelect = (flavorName) => {
+    console.log(`handleFlavorSelect: flavor=${flavorName}`);
+    setSelectedFlavor(flavorName);
+    try {
+      localStorage.setItem("selectedFlavor", flavorName);
+      localStorage.setItem("taskFlavors", JSON.stringify([flavorName, null, null]));
+      console.log(`Saved selectedFlavor=${flavorName} and taskFlavors=[${flavorName}, null, null] to localStorage`);
+    } catch (error) {
+      console.error("Failed to save flavor data to localStorage:", error);
+    }
+  };
+
   // Flavors array
   const flavours = [
     { img: Crayfish, name: "Crayfish" },
@@ -88,7 +105,6 @@ function Pack() {
           <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
             WHICH FLAVOR ARE <br /> YOU HAVING FIRST?
           </p>
-       
         </motion.div>
 
         {/* Flavors Side by Side */}
@@ -103,7 +119,7 @@ function Pack() {
                 animate="visible"
                 variants={imageVariants}
                 custom={i}
-                onClick={() => setSelectedFlavor(flavour.name)}
+                onClick={() => handleFlavorSelect(flavour.name)}
               />
               <AnimatePresence>
                 {selectedFlavor === flavour.name && (
@@ -134,6 +150,7 @@ function Pack() {
                 onClick={handleContinue}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
+                className="p-0 rounded-2xl overflow-hidden"
               >
                 <motion.img
                   src={ContinueButton}
@@ -147,16 +164,15 @@ function Pack() {
           )}
         </AnimatePresence>
       </div>
-  <AnimatePresence>
+      <AnimatePresence>
         {showWave && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-           
           >
-           
+            {/* Add wave animation or content here if needed */}
           </motion.div>
         )}
       </AnimatePresence>

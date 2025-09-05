@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { clamp, rand, COMBO_GIFS, FRUIT_POINTS, OBSTACLE_PENALTY, COMBO_BONUS, SPAWN_INTERVAL_MS, BASE_CANVAS_W, BASE_CANVAS_H } from "./utils";
-import { images } from "./assets";
+import { getImages } from "./images";
 
 function BordGame({
   canvasW = BASE_CANVAS_W,
@@ -14,6 +14,7 @@ function BordGame({
   basketHeight,
   isMuted,
   volume,
+  selectedFlavors,
 }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
@@ -26,34 +27,60 @@ function BordGame({
 
   // Preload images with loading state
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [gameImages, setGameImages] = useState(null);
 
-  // Ensure images are loaded
+  // Log props for debugging
   useEffect(() => {
+    console.log(`BordGame props: currentTask=${currentTask}, selectedFlavors=${JSON.stringify(selectedFlavors)}`);
+  }, [currentTask, selectedFlavors]);
+
+  // Load images dynamically based on currentTask and selectedFlavors
+  useEffect(() => {
+    // Skip if selectedFlavors is undefined
+    if (selectedFlavors === undefined) {
+      console.warn(`selectedFlavors is undefined for Task ${currentTask}, skipping image loading`);
+      return;
+    }
+
+    const images = getImages(currentTask, selectedFlavors);
+    setGameImages(images); // Store images in state
+
     const imagePromises = Object.values(images).map(
       (img) =>
         new Promise((resolve) => {
-          if (img.complete && img.naturalWidth !== 0) return resolve(true);
-          img.onload = () => resolve(true);
+          if (img.complete && img.naturalWidth !== 0) {
+            console.log(`Loaded image: ${img.src}`);
+            return resolve(true);
+          }
+          img.onload = () => {
+            console.log(`Loaded image: ${img.src}`);
+            resolve(true);
+          };
           img.onerror = () => {
             console.warn(`Failed to load image: ${img.src}`);
             resolve(false);
           };
         })
     );
+
     Promise.all(imagePromises).then((results) => {
-      if (results.every(Boolean)) setImagesLoaded(true);
-      else console.warn("Some images failed to load");
+      if (results.every(Boolean)) {
+        console.log(`All images loaded for Task ${currentTask}`);
+        setImagesLoaded(true);
+      } else {
+        console.warn("Some images failed to load");
+      }
     });
-  }, []);
+  }, [currentTask, selectedFlavors]);
 
   // Scaled game constants
   const scaled = useMemo(
     () => ({
-      basket: { 
+      basket: {
         offset: basketHeight * scale,
-        w: 180 * scale, 
-        h: 150 * scale, 
-        speed: 7 * scale 
+        w: 180 * scale,
+        h: 150 * scale,
+        speed: 7 * scale,
       },
       entity: { minX: 20 * scale, r: 28 * scale, startY: 20 * scale },
       lineWidth: 4 * scale,
@@ -138,7 +165,7 @@ function BordGame({
   // Spawn fruits & obstacles
   useEffect(() => {
     runningRef.current = true;
-    const bombProbability = currentTask === 1 ? 0.4 : currentTask === 2 ? 0.5 : 0.6; // Increased bomb probability
+    const bombProbability = currentTask === 1 ? 0.4 : currentTask === 2 ? 0.5 : 0.6;
     const spawn = () => {
       if (!runningRef.current) return;
       const isObstacle = Math.random() < bombProbability;
@@ -191,7 +218,10 @@ function BordGame({
 
   // Main render loop
   useEffect(() => {
-    if (!imagesLoaded) return;
+    if (!imagesLoaded || !gameImages || selectedFlavors === undefined) {
+      console.log(`Render loop skipped: imagesLoaded=${imagesLoaded}, gameImages=${!!gameImages}, selectedFlavors=${JSON.stringify(selectedFlavors)}`);
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -200,14 +230,14 @@ function BordGame({
     ctx.scale(scale, scale);
 
     const drawBasket = (basket) => {
-      if (images.basket.complete) {
+      if (gameImages.basket.complete) {
         ctx.save();
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
         ctx.shadowBlur = 5 * scale;
         ctx.shadowOffsetX = 2 * scale;
         ctx.shadowOffsetY = 2 * scale;
         ctx.drawImage(
-          images.basket,
+          gameImages.basket,
           basket.x / scale,
           basket.y / scale,
           basket.w / scale,
@@ -218,7 +248,7 @@ function BordGame({
     };
 
     const drawFruit = (fruit) => {
-      const img = images[fruit.type];
+      const img = gameImages[fruit.type];
       if (img?.complete) {
         ctx.save();
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -236,7 +266,7 @@ function BordGame({
     };
 
     const drawObstacle = (obstacle) => {
-      const img = images[obstacle.type];
+      const img = gameImages[obstacle.type];
       if (img?.complete) {
         ctx.save();
         ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
@@ -320,16 +350,13 @@ function BordGame({
       runningRef.current = false;
       ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset canvas transform
     };
-  }, [canvasW, canvasH, currentTask, onScoreDelta, onComboTriggered, scale, imagesLoaded]);
+  }, [canvasW, canvasH, currentTask, onScoreDelta, onComboTriggered, scale, imagesLoaded, gameImages, selectedFlavors]);
 
   return (
     <div className="relative w-full overflow-hidden">
-    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 
-  bg-black text-white text-sm w-14 h-14 flex items-center justify-center rounded-full border-4 border-white">
-  {timeLeft}
-</div>
-
-
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-black text-white text-sm w-14 h-14 flex items-center justify-center rounded-full border-4 border-white">
+        {timeLeft}
+      </div>
       <canvas
         ref={canvasRef}
         width={canvasW}

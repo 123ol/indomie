@@ -12,6 +12,16 @@ import leaderboard1 from "../assets/Leaderboard button.png";
 import EndTask from "../assets/End task.png";
 import share from "../assets/Share button.png";
 import left from "../assets/Left Button.png";
+import Crayfish from "../assets/Crayfish.png";
+import Peppersoup from "../assets/Pepper soup noodle.png";
+import OrientalNoodle from "../assets/Oriental Noodle.png";
+
+// Flavor definitions
+const allFlavors = [
+  { img: Crayfish, name: "Crayfish" },
+  { img: Peppersoup, name: "Peppersoup" },
+  { img: OrientalNoodle, name: "Oriental" },
+];
 
 export default function GameTaskPage() {
   const [currentTask, setCurrentTask] = useState(1);
@@ -34,12 +44,56 @@ export default function GameTaskPage() {
   const [activeSection, setActiveSection] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [leaderboardFilter, setLeaderboardFilter] = useState("all");
-  const [notification, setNotification] = useState(null); // New state for notifications
+  const [notification, setNotification] = useState(null);
+  const [selectedFlavors, setSelectedFlavors] = useState(() => {
+    try {
+      const saved = localStorage.getItem("taskFlavors");
+      const selectedFlavor = localStorage.getItem("selectedFlavor");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log(`Loaded taskFlavors from localStorage: ${JSON.stringify(parsed)}`);
+        return parsed;
+      } else if (selectedFlavor) {
+        console.log(`Initialized taskFlavors with selectedFlavor: ${selectedFlavor}`);
+        return [selectedFlavor, null, null];
+      }
+      console.log("No taskFlavors or selectedFlavor in localStorage, initializing with [null, null, null]");
+      return [null, null, null];
+    } catch (error) {
+      console.error("Failed to initialize selectedFlavors from localStorage:", error);
+      return [null, null, null];
+    }
+  });
+
+  const [showFlavorSelection, setShowFlavorSelection] = useState(false);
 
   const navigate = useNavigate();
   const audioCatchRef = useRef(null);
   const audioObstacleRef = useRef(null);
   const audioComboRefs = useRef([]);
+
+  // Animation variants for flavor images
+  const imageVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.8 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.8,
+        ease: "easeOut",
+        type: "spring",
+        bounce: 0.4,
+        delay: i * 0.2,
+      },
+    }),
+  };
+
+  // Animation variants for border
+  const borderVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { opacity: 1, scale: 1.1, transition: { duration: 0.3, ease: "easeOut" } },
+  };
 
   // Monitor authentication state
   useEffect(() => {
@@ -61,100 +115,137 @@ export default function GameTaskPage() {
     }
   }, [notification]);
 
+  // Save selected flavors to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("taskFlavors", JSON.stringify(selectedFlavors));
+      console.log(`Saved taskFlavors to localStorage: ${JSON.stringify(selectedFlavors)}`);
+    } catch (error) {
+      console.error("Failed to save taskFlavors to localStorage:", error);
+      setNotification({ type: "error", message: "Failed to save flavors to storage." });
+    }
+  }, [selectedFlavors]);
+
+  // Check if flavor selection is needed before starting a task
+  useEffect(() => {
+    console.log(`useEffect: currentTask=${currentTask}, selectedFlavors=${JSON.stringify(selectedFlavors)}`);
+    if (currentTask > 1 && !selectedFlavors[currentTask - 1]) {
+      console.log(`Showing flavor selection for Task ${currentTask}`);
+      setShowFlavorSelection(true);
+    } else if (currentTask === 1 && !selectedFlavors[0]) {
+      console.log("No flavor for Task 1, redirecting to /pack");
+      navigate("/pack");
+    } else {
+      console.log(`Hiding flavor selection for Task ${currentTask}`);
+      setShowFlavorSelection(false);
+    }
+  }, [currentTask, selectedFlavors, navigate]);
+
+  // Get available flavors for the current task
+  const getAvailableFlavors = useCallback(() => {
+    return allFlavors.filter((flavor) => !selectedFlavors.includes(flavor.name));
+  }, [selectedFlavors]);
+
+  // Gameplay handlers
   const getPreviousSum = useCallback((taskNumber) => {
     const sum = completedTaskScores.slice(0, taskNumber - 1).reduce((a, b) => a + b, 0);
     console.log(`Calculating previous sum for task ${taskNumber}: ${completedTaskScores.slice(0, taskNumber - 1)}, Sum: ${sum}`);
     return sum;
   }, [completedTaskScores]);
 
-  // Responsive canvas sizing
-  useEffect(() => {
-    const updateSize = debounce(() => {
-      const windowWidth = window.innerWidth;
-      const padding = windowWidth < 640 ? 20 : 40;
-      const maxWidth = Math.min(800, windowWidth - padding);
-      const ratio = 520 / 800;
-      setCanvasSize({ w: maxWidth, h: maxWidth * ratio });
-    }, 100);
+  const startGame = useCallback(
+    (taskNumber, flavor = null) => {
+      console.log(`startGame called for Task ${taskNumber}, isReady=${isReady}, flavor=${flavor || selectedFlavors[taskNumber - 1]}`);
+      if (!isReady) {
+        console.log("Cannot start game: assets not ready");
+        setNotification({ type: "error", message: "Assets not loaded yet. Please wait." });
+        return;
+      }
+      if (!flavor && !selectedFlavors[taskNumber - 1]) {
+        console.log(`No flavor selected for Task ${taskNumber}, showing flavor selection`);
+        setShowFlavorSelection(true);
+        setCurrentTask(taskNumber);
+        return;
+      }
+      const previousSum = getPreviousSum(taskNumber);
+      console.log(`Starting Task ${taskNumber} with score: ${previousSum}`);
+      setCurrentTask(taskNumber);
+      setScore(previousSum);
+      setShowLeaderboard(false);
+      setShowEndTask(false);
+      setActiveSection(null);
+      setGameActive(true);
+      setGameOver(false);
+      setLives(3);
+      setTimeLeft(GAME_DURATION_SEC);
+      setComboGif(null);
+      console.log(`Game started: gameActive=true, task=${taskNumber}`);
+    },
+    [isReady, getPreviousSum, selectedFlavors]
+  );
 
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+  // Handle flavor selection
+  const handleFlavorSelect = useCallback(
+    (flavorName) => {
+      console.log(`handleFlavorSelect: flavor=${flavorName}, currentTask=${currentTask}`);
+      setSelectedFlavors((prev) => {
+        const newFlavors = [...prev];
+        newFlavors[currentTask - 1] = flavorName;
+        console.log(`Updated selectedFlavors: ${JSON.stringify(newFlavors)}`);
+        try {
+          localStorage.setItem("selectedFlavor", flavorName);
+          localStorage.setItem("taskFlavors", JSON.stringify(newFlavors));
+          console.log(`Saved selectedFlavor=${flavorName} and taskFlavors=${JSON.stringify(newFlavors)} to localStorage`);
+        } catch (error) {
+          console.error("Failed to save flavor data to localStorage:", error);
+          setNotification({ type: "error", message: "Failed to save flavor selection." });
+        }
+        setShowFlavorSelection(false);
+        setGameOver(false);
+        setActiveSection(null);
+        startGame(currentTask, flavorName); // Pass flavor directly
+        return newFlavors;
+      });
+    },
+    [currentTask, startGame]
+  );
+
+  const advanceTask = useCallback(() => {
+    const nextTask = currentTask + 1;
+    console.log(`Advancing from Task ${currentTask} to Task ${nextTask}`);
+    if (nextTask <= 3) {
+      setCurrentTask(nextTask);
+      setShowFlavorSelection(true);
+      setGameActive(false);
+      setGameOver(false);
+    }
+  }, [currentTask]);
+
+  const handleReplayAll = useCallback(() => {
+    console.log("Replaying all tasks from Task 1");
+    setCurrentTask(1);
+    setScore(0);
+    setCompletedTaskScores([0, 0, 0]);
+    setSelectedFlavors([null, null, null]);
+    try {
+      localStorage.removeItem("taskFlavors");
+      localStorage.removeItem("selectedFlavor");
+      console.log("Cleared localStorage: taskFlavors, selectedFlavor");
+    } catch (error) {
+      console.error("Failed to clear localStorage:", error);
+      setNotification({ type: "error", message: "Failed to clear storage." });
+    }
+    setTimeLeft(GAME_DURATION_SEC);
+    setLives(3);
+    setGameActive(false);
+    setGameOver(false);
+    setShowLeaderboard(false);
+    setShowEndTask(false);
+    setActiveSection(null);
+    setComboGif(null);
+    setShowFlavorSelection(true);
   }, []);
 
-  // Preload assets
-  useEffect(() => {
-    let mounted = true;
-    audioCatchRef.current = new Audio(SOUND_CATCH);
-    audioObstacleRef.current = new Audio(SOUND_OBSTACLE);
-    audioComboRefs.current = COMBO_SOUNDS.map((src) => new Audio(src));
-
-    const setAudioVolume = () => {
-      audioCatchRef.current.volume = volume;
-      audioObstacleRef.current.volume = volume;
-      audioComboRefs.current.forEach((audio) => (audio.volume = volume));
-    };
-    setAudioVolume();
-
-    const preloadImages = COMBO_GIFS.map(
-      (src) =>
-        new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            console.log(`Loaded GIF: ${src}`);
-            resolve(true);
-          };
-          img.onerror = () => {
-            console.warn(`Failed to load combo GIF: ${src}`);
-            resolve(false);
-          };
-          img.src = src;
-        })
-    );
-
-    const preloadAudio = [audioCatchRef.current, audioObstacleRef.current, ...audioComboRefs.current].map(
-      (audio) =>
-        new Promise((resolve) => {
-          const cleanup = () => {
-            audio.removeEventListener("canplaythrough", onLoad);
-            audio.removeEventListener("error", onError);
-          };
-          const onLoad = () => {
-            cleanup();
-            console.log(`Loaded audio: ${audio.src}`);
-            resolve(true);
-          };
-          const onError = () => {
-            cleanup();
-            console.warn(`Failed to load audio: ${audio.src}`);
-            resolve(false);
-          };
-
-          audio.addEventListener("canplaythrough", onLoad, { once: true });
-          audio.addEventListener("error", onError, { once: true });
-          setTimeout(() => {
-            cleanup();
-            resolve(true);
-          }, 1500);
-        })
-    );
-
-    Promise.all([...preloadImages, ...preloadAudio]).then((results) => {
-      if (mounted) {
-        if (results.every(Boolean)) {
-          setIsReady(true);
-        } else {
-          setAssetError("Some assets failed to load. Game may not function correctly.");
-        }
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [volume]);
-
-  // Audio helpers
   const playCatch = useCallback(() => {
     if (!audioCatchRef.current || isMuted) return;
     audioCatchRef.current.currentTime = 0;
@@ -175,13 +266,30 @@ export default function GameTaskPage() {
     audio.play().catch(() => {});
   }, [isMuted]);
 
-  useEffect(() => {
-    if (audioCatchRef.current) audioCatchRef.current.volume = volume;
-    if (audioObstacleRef.current) audioObstacleRef.current.volume = volume;
-    audioComboRefs.current.forEach((audio) => (audio.volume = volume));
-  }, [volume]);
+  const handleComboTriggered = useCallback(
+    (gifUrl) => {
+      console.log(`Combo triggered with GIF: ${gifUrl}`);
+      setComboGif(gifUrl);
+      playCombo();
+      setTimeout(() => setComboGif(null), 1400);
+    },
+    [playCombo]
+  );
 
-  // Firestore handlers
+  const saveTaskScore = useCallback(() => {
+    const previousSum = getPreviousSum(currentTask);
+    const contribution = Math.max(0, score - previousSum);
+    console.log(`Saving score for Task ${currentTask}: Contribution: ${contribution}, Previous sum: ${previousSum}`);
+    setCompletedTaskScores((prev) => {
+      const newScores = [...prev];
+      newScores[currentTask - 1] = contribution;
+      const totalScore = newScores.reduce((a, b) => a + b, 0);
+      console.log(`Updated scores: ${newScores}, Total: ${totalScore}`);
+      setScore(totalScore);
+      return newScores;
+    });
+  }, [score, currentTask, getPreviousSum]);
+
   const fetchLeaderboardFromServer = useCallback(() => {
     try {
       let q;
@@ -273,22 +381,25 @@ export default function GameTaskPage() {
     [currentUser, fetchLeaderboardFromServer, navigate]
   );
 
-  // Save task score to completedTaskScores
-  const saveTaskScore = useCallback(() => {
-    const previousSum = getPreviousSum(currentTask);
-    const contribution = Math.max(0, score - previousSum);
-    console.log(`Saving score for Task ${currentTask}: Contribution: ${contribution}, Previous sum: ${previousSum}`);
-    setCompletedTaskScores((prev) => {
-      const newScores = [...prev];
-      newScores[currentTask - 1] = contribution;
-      const totalScore = newScores.reduce((a, b) => a + b, 0);
-      console.log(`Updated scores: ${newScores}, Total: ${totalScore}`);
-      setScore(totalScore);
-      return newScores;
-    });
-  }, [score, currentTask, getPreviousSum]);
+  const handleGameEnd = useCallback(() => {
+    console.log(`Game ended for Task ${currentTask}, current score: ${score}`);
+    setGameActive(false);
+    setTimeLeft(GAME_DURATION_SEC);
+    setComboGif(null);
+    saveTaskScore();
+    if (currentTask === 3) {
+      console.log("Task 3 completed, going to end game section");
+      const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
+      const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
+      console.log(`Saving final score to leaderboard: ${totalScore}`);
+      saveHighScoreToServer(entry);
+      setCurrentTask(4);
+    } else {
+      console.log(`Task ${currentTask} completed, showing task transition section`);
+      setGameOver(true);
+    }
+  }, [score, currentTask, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]);
 
-  // Gameplay handlers
   const debouncedHandleScoreDelta = useCallback(
     debounce((delta) => {
       console.log(`Score delta: ${delta}, Current lives: ${lives}, Task: ${currentTask}`);
@@ -332,85 +443,105 @@ export default function GameTaskPage() {
     [playCatch, playObstacle, playCombo, score, currentTask, lives, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]
   );
 
-  const handleComboTriggered = useCallback(
-    (gifUrl) => {
-      console.log(`Combo triggered with GIF: ${gifUrl}`);
-      setComboGif(gifUrl);
-      playCombo();
-      setTimeout(() => setComboGif(null), 1400);
-    },
-    [playCombo]
-  );
+  const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
 
-  const startGame = useCallback(
-    (taskNumber) => {
-      if (!isReady) {
-        console.log("Cannot start game: assets not ready");
-        return;
-      }
-      const previousSum = getPreviousSum(taskNumber);
-      console.log(`Starting Task ${taskNumber} with score: ${previousSum}`);
-      setCurrentTask(taskNumber);
-      setScore(previousSum);
-      setShowLeaderboard(false);
-      setShowEndTask(false);
-      setActiveSection(null);
-      setGameActive(true);
-      setGameOver(false);
-      setLives(3);
-      setTimeLeft(GAME_DURATION_SEC);
-      setComboGif(null);
-    },
-    [isReady, getPreviousSum]
-  );
+  // Responsive canvas sizing
+  useEffect(() => {
+    const updateSize = debounce(() => {
+      const windowWidth = window.innerWidth;
+      const padding = windowWidth < 640 ? 20 : 40;
+      const maxWidth = Math.min(800, windowWidth - padding);
+      const ratio = 520 / 800;
+      setCanvasSize({ w: maxWidth, h: maxWidth * ratio });
+    }, 100);
 
-  const advanceTask = useCallback(() => {
-    const nextTask = currentTask + 1;
-    console.log(`Advancing from Task ${currentTask} to Task ${nextTask}`);
-    if (nextTask <= 3) {
-      startGame(nextTask);
-    }
-  }, [currentTask, startGame]);
-
-  const handleGameEnd = useCallback(() => {
-    console.log(`Game ended for Task ${currentTask}, current score: ${score}`);
-    setGameActive(false);
-    setTimeLeft(GAME_DURATION_SEC);
-    setComboGif(null);
-    saveTaskScore();
-    if (currentTask === 3) {
-      console.log("Task 3 completed, going to end game section");
-      const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
-      const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
-      console.log(`Saving final score to leaderboard: ${totalScore}`);
-      saveHighScoreToServer(entry);
-      setCurrentTask(4);
-    } else {
-      console.log(`Task ${currentTask} completed, showing task transition section`);
-      setGameOver(true);
-    }
-  }, [score, currentTask, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]);
-
-  const handleReplayAll = useCallback(() => {
-    console.log("Replaying all tasks from Task 1");
-    setCurrentTask(1);
-    setScore(0);
-    setCompletedTaskScores([0, 0, 0]);
-    setTimeLeft(GAME_DURATION_SEC);
-    setLives(3);
-    setGameActive(false);
-    setGameOver(false);
-    setShowLeaderboard(false);
-    setShowEndTask(false);
-    setActiveSection(null);
-    setComboGif(null);
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
+  // Preload assets
+  useEffect(() => {
+    let mounted = true;
+    audioCatchRef.current = new Audio(SOUND_CATCH);
+    audioObstacleRef.current = new Audio(SOUND_OBSTACLE);
+    audioComboRefs.current = COMBO_SOUNDS.map((src) => new Audio(src));
+
+    const setAudioVolume = () => {
+      audioCatchRef.current.volume = volume;
+      audioObstacleRef.current.volume = volume;
+      audioComboRefs.current.forEach((audio) => (audio.volume = volume));
+    };
+    setAudioVolume();
+
+    const preloadImages = [...COMBO_GIFS, ...allFlavors.map((f) => f.img)].map(
+      (src) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            console.log(`Loaded image: ${src}`);
+            resolve(true);
+          };
+          img.onerror = () => {
+            console.warn(`Failed to load image: ${src}`);
+            resolve(false);
+          };
+          img.src = src;
+        })
+    );
+
+    const preloadAudio = [audioCatchRef.current, audioObstacleRef.current, ...audioComboRefs.current].map(
+      (audio) =>
+        new Promise((resolve) => {
+          const cleanup = () => {
+            audio.removeEventListener("canplaythrough", onLoad);
+            audio.removeEventListener("error", onError);
+          };
+          const onLoad = () => {
+            cleanup();
+            console.log(`Loaded audio: ${audio.src}`);
+            resolve(true);
+          };
+          const onError = () => {
+            cleanup();
+            console.warn(`Failed to load audio: ${audio.src}`);
+            resolve(false);
+          };
+
+          audio.addEventListener("canplaythrough", onLoad, { once: true });
+          audio.addEventListener("error", onError, { once: true });
+          setTimeout(() => {
+            cleanup();
+            resolve(true);
+          }, 1500);
+        })
+    );
+
+    Promise.all([...preloadImages, ...preloadAudio]).then((results) => {
+      if (mounted) {
+        if (results.every(Boolean)) {
+          console.log("All assets loaded successfully, setting isReady=true");
+          setIsReady(true);
+        } else {
+          console.warn("Some assets failed to load");
+          setAssetError("Some assets failed to load. Game may not function correctly.");
+        }
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [volume]);
+
+  // Log rendering state
+  useEffect(() => {
+    console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}`);
+  }, [gameActive, showFlavorSelection, currentTask, activeSection, gameOver]);
 
   return (
     <div
-      className="h-[100vh] md:h-[160vh] w-full flex flex-col items-center p-4 sm:p-6 md:p-10"
+      className="h-[100vh] md:h-[160vh] w-full flex flex-col items-center p-4 sm:p-6 md:p-10 relative"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -455,7 +586,66 @@ export default function GameTaskPage() {
       </div>
 
       <div className="w-full max-w-4xl rounded-2xl shadow p-4 sm:p-6">
-        {!gameActive && currentTask <= 3 && !activeSection ? (
+        {showFlavorSelection && currentTask <= 3 ? (
+          <div className="flex flex-col items-center pt-20">
+            <motion.div
+              className="text-center px-4 mb-16"
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
+                PICK YOUR FLAVOR FOR <br /> TASK {currentTask}
+              </p>
+            </motion.div>
+            <div className="flex justify-center items-center space-x-4 md:space-x-6 lg:space-x-8 mb-20">
+              {getAvailableFlavors().map((flavor, i) => (
+                <div key={flavor.name} className="relative">
+                  <motion.img
+                    src={flavor.img}
+                    alt={`${flavor.name} Pack`}
+                    className="w-32 md:w-36 lg:w-40 object-contain cursor-pointer"
+                    initial="hidden"
+                    animate="visible"
+                    variants={imageVariants}
+                    custom={i}
+                    onClick={() => handleFlavorSelect(flavor.name)}
+                    role="button"
+                    aria-label={`Select ${flavor.name} flavor`}
+                  />
+                  <AnimatePresence>
+                    {selectedFlavors[currentTask - 1] === flavor.name && (
+                      <motion.div
+                        className="absolute inset-0 border-4 border-yellow-400 rounded-lg"
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        variants={borderVariants}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+            {getAvailableFlavors().length === 1 && (
+              <motion.button
+                onClick={() => handleFlavorSelect(getAvailableFlavors()[0].name)}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="p-0 rounded-2xl overflow-hidden"
+              >
+                <motion.img
+                  src={task}
+                  alt="Start Task"
+                  className="w-48 h-full object-cover"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+                />
+              </motion.button>
+            )}
+          </div>
+        ) : !gameActive && currentTask <= 3 && !activeSection ? (
           <div className="flex flex-col items-center pt-20">
             {currentTask === 1 && !gameOver ? (
               <>
@@ -467,11 +657,11 @@ export default function GameTaskPage() {
                 </p>
                 <img src={Scorereveal} alt="Start Game" className="w-80 rounded-lg mb-4" />
                 <button
-                  onClick={() => startGame(1)}
+                  onClick={() => startGame(1, selectedFlavors[0])}
                   className={`p-0 rounded-2xl overflow-hidden ${
-                    !isReady ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
+                    !isReady || !selectedFlavors[0] ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
                   }`}
-                  disabled={!isReady}
+                  disabled={!isReady || !selectedFlavors[0]}
                 >
                   <img src={task} alt="Task button" className="w-48 h-full object-cover" />
                 </button>
@@ -488,10 +678,9 @@ export default function GameTaskPage() {
                     </span>
                   </div>
                 </div>
-
                 <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="w-80 rounded-lg mb-4" />
                 <div className="flex flex-wrap gap-3">
-                  {currentTask < 3 && (
+                  {currentTask < 3 && completedTaskScores[currentTask - 1] > 0 && (
                     <button
                       onClick={advanceTask}
                       className={`p-0 rounded-2xl overflow-hidden ${
@@ -505,7 +694,7 @@ export default function GameTaskPage() {
                   <button
                     onClick={() => {
                       console.log(`Replaying Task ${currentTask}`);
-                      startGame(currentTask);
+                      startGame(currentTask, selectedFlavors[currentTask - 1]);
                     }}
                     className="p-0 rounded-2xl overflow-hidden hover:brightness-110"
                   >
@@ -519,7 +708,7 @@ export default function GameTaskPage() {
               </div>
             )}
           </div>
-        ) : gameActive ? (
+        ) : gameActive && Array.isArray(selectedFlavors) ? ( // Only render Game if selectedFlavors is an array
           <div className="relative">
             <div className="absolute top-2 -right-8 z-10 flex flex-col space-y-1 text-white text-sm px-3 py-2 rounded-lg">
               <div className="flex flex-col items-center">
@@ -528,7 +717,6 @@ export default function GameTaskPage() {
               </div>
               <p className="text-center text-3xl">{'❤️'.repeat(lives)}</p>
             </div>
-
             <Game
               canvasW={canvasSize.w}
               canvasH={canvasSize.h}
@@ -541,6 +729,7 @@ export default function GameTaskPage() {
               isMuted={isMuted}
               volume={volume}
               basketHeight={basketHeight}
+              selectedFlavors={selectedFlavors}
             />
             <AnimatePresence>
               {comboGif && (
@@ -556,149 +745,147 @@ export default function GameTaskPage() {
             </AnimatePresence>
           </div>
         ) : (
-          <>
-            {currentTask > 3 && !activeSection && (
-              <div className="flex flex-col items-center pt-20">
-                <div className="flex flex-col items-center mb-4">
-                  <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
-                    Final Score
-                  </span>
-                  <span className="min-w-[200px] px-4 py-1 border border-orange-500 text-center text-xl text-white font-extrabold rounded-lg">
-                    {score}
-                  </span>
-                </div>
-                <img src={Scorereveal} alt="End Game" className="w-80 rounded-lg mb-4" />
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setActiveSection("endTask")}>
-                    <img src={EndTask} alt="End Task" className="w-36 rounded-lg mt-4" />
+          <div className="text-center text-white">
+          </div>
+        )}
+        {currentTask > 3 && !activeSection && (
+          <div className="flex flex-col items-center pt-20">
+            <div className="flex flex-col items-center mb-4">
+              <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                Final Score
+              </span>
+              <span className="min-w-[200px] px-4 py-1 border border-orange-500 text-center text-xl text-white font-extrabold rounded-lg">
+                {score}
+              </span>
+            </div>
+            <img src={Scorereveal} alt="End Game" className="w-80 rounded-lg mb-4" />
+            <div className="flex flex-wrap gap-3">
+              <button onClick={() => setActiveSection("endTask")}>
+                <img src={EndTask} alt="End Task" className="w-36 rounded-lg mt-4" />
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Fetching leaderboard");
+                  fetchLeaderboardFromServer();
+                  setActiveSection("leaderboard");
+                }}
+              >
+                <img src={leaderboard1} alt="leader" className="w-36 rounded-lg mt-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        {activeSection === "endTask" && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex flex-col items-center pt-20"
+          >
+            <img src={welldone} alt="End Task" className="w-80 rounded-lg mt-4" />
+            <button
+              onClick={handleReplayAll}
+              className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
+            >
+              Play Again
+            </button>
+          </motion.div>
+        )}
+        {activeSection === "leaderboard" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="flex flex-col items-center min-h-screen py-6">
+              <div className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
+                <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
+                <div className="flex justify-center gap-2 mb-6">
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      leaderboardFilter === "all" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                    }`}
+                    onClick={() => setLeaderboardFilter("all")}
+                  >
+                    All time
                   </button>
                   <button
-                    onClick={() => {
-                      console.log("Fetching leaderboard");
-                      fetchLeaderboardFromServer();
-                      setActiveSection("leaderboard");
-                    }}
+                    className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      leaderboardFilter === "week" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                    }`}
+                    onClick={() => setLeaderboardFilter("week")}
                   >
-                    <img src={leaderboard1} alt="leader" className="w-36 rounded-lg mt-4" />
+                    This Week
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      leaderboardFilter === "month" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
+                    }`}
+                    onClick={() => setLeaderboardFilter("month")}
+                  >
+                    This Month
                   </button>
                 </div>
-              </div>
-            )}
-            {activeSection === "endTask" && (
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center pt-20"
-              >
-                <img src={welldone} alt="End Task" className="w-80 rounded-lg mt-4" />
-                <button
-                  onClick={handleReplayAll}
-                  className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
-                >
-                  Play Again
-                </button>
-              </motion.div>
-            )}
-            {activeSection === "leaderboard" && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <div className="flex flex-col items-center min-h-screen py-6">
-                  <div className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
-                    <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
-
-                    <div className="flex justify-center gap-2 mb-6">
-                      <button
-                        className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          leaderboardFilter === "all" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                        }`}
-                        onClick={() => setLeaderboardFilter("all")}
-                      >
-                        All time
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          leaderboardFilter === "week" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                        }`}
-                        onClick={() => setLeaderboardFilter("week")}
-                      >
-                        This Week
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded-full text-sm font-bold ${
-                          leaderboardFilter === "month" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                        }`}
-                        onClick={() => setLeaderboardFilter("month")}
-                      >
-                        This Month
-                      </button>
+                {leaderboard.length > 0 ? (
+                  <>
+                    <div className="flex justify-center items-end gap-4 mb-6">
+                      {leaderboard[1] && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
+                            2
+                          </div>
+                          <p className="text-xs text-white mt-1">@{leaderboard[1].player}</p>
+                          <p className="text-yellow-400 font-bold">{leaderboard[1].score}</p>
+                        </div>
+                      )}
+                      {leaderboard[0] && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-24 h-24 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-2xl relative">
+                            👑
+                          </div>
+                          <p className="text-xs text-white mt-1">@{leaderboard[0].player}</p>
+                          <p className="text-yellow-400 font-bold">{leaderboard[0].score}</p>
+                        </div>
+                      )}
+                      {leaderboard[2] && (
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
+                            3
+                          </div>
+                          <p className="text-xs text-white mt-1">@{leaderboard[2].player}</p>
+                          <p className="text-yellow-400 font-bold">{leaderboard[2].score}</p>
+                        </div>
+                      )}
                     </div>
-
-                    {leaderboard.length > 0 ? (
-                      <>
-                        <div className="flex justify-center items-end gap-4 mb-6">
-                          {leaderboard[1] && (
-                            <div className="flex flex-col items-center">
-                              <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
-                                2
-                              </div>
-                              <p className="text-xs text-white mt-1">@{leaderboard[1].player}</p>
-                              <p className="text-yellow-400 font-bold">{leaderboard[1].score}</p>
-                            </div>
-                          )}
-                          {leaderboard[0] && (
-                            <div className="flex flex-col items-center">
-                              <div className="w-24 h-24 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-2xl relative">
-                                👑
-                              </div>
-                              <p className="text-xs text-white mt-1">@{leaderboard[0].player}</p>
-                              <p className="text-yellow-400 font-bold">{leaderboard[0].score}</p>
-                            </div>
-                          )}
-                          {leaderboard[2] && (
-                            <div className="flex flex-col items-center">
-                              <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
-                                3
-                              </div>
-                              <p className="text-xs text-white mt-1">@{leaderboard[2].player}</p>
-                              <p className="text-yellow-400 font-bold">{leaderboard[2].score}</p>
-                            </div>
-                          )}
+                    <div className="space-y-3">
+                      {leaderboard.slice(3, 8).map((entry, idx) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between bg-[#5A2A12] text-white px-3 py-2 rounded-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
+                              {idx + 4}
+                            </span>
+                            <span>@{entry.player}</span>
+                          </div>
+                          <span className="text-yellow-400 font-bold">{entry.score} pts</span>
                         </div>
-                        <div className="space-y-3">
-                          {leaderboard.slice(3, 8).map((entry, idx) => (
-                            <div
-                              key={entry.id}
-                              className="flex items-center justify-between bg-[#5A2F12] text-white px-3 py-2 rounded-lg"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
-                                  {idx + 4}
-                                </span>
-                                <span>@{entry.player}</span>
-                              </div>
-                              <span className="text-yellow-400 font-bold">{entry.score} pts</span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-sm text-slate-300">No scores yet — play to create the first one!</div>
-                    )}
-                  </div>
-                  <div className="mt-6 flex gap-4">
-                    <button
-                      onClick={() => setActiveSection(null)}
-                      className="text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md"
-                    >
-                      <img src={left} alt="Back" className="w-16 rounded-lg mt-4" />
-                    </button>
-                    <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md">
-                      <img src={share} alt="Share" className="w-40 rounded-lg mt-4" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-slate-300">No scores yet — play to create the first one!</div>
+                )}
+              </div>
+              <div className="mt-6 flex gap-4">
+                <button
+                  onClick={() => setActiveSection(null)}
+                  className="text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md"
+                >
+                  <img src={left} alt="Back" className="w-16 rounded-lg mt-4" />
+                </button>
+                <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md">
+                  <img src={share} alt="Share" className="w-40 rounded-lg mt-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
