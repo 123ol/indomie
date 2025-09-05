@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import backgroundImage from "../assets/Intro Background.png";
+import backgroundImage from "../assets/Other stage background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import gameRule1 from "../assets/Game rule 1.png";
 import gameRule2 from "../assets/Game rule 2.png";
 import ContinueButton from "../assets/Continue.png";
 import Right from "../assets/Right Button.png";
 import Left from "../assets/Left Button.png";
-import Transition from "../assets/Na you get am.gif";
 
 function Rules() {
   const navigate = useNavigate();
@@ -59,7 +58,7 @@ function Rules() {
 
   return (
     <div
-      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-4"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -82,122 +81,116 @@ function Rules() {
         />
       </motion.div>
 
-      {/* Content: Section 1 or Section 2 */}
-      <div className="flex flex-col items-center justify-center space-y-6 flex-grow">
+      {/* Content */}
+      <div className="flex flex-col items-center justify-center flex-grow ">
         <AnimatePresence mode="wait" custom={direction}>
           {currentSection === 1 && (
             <motion.div
               key="section1"
-              className="flex flex-col items-center justify-center space-y-6"
+              className="relative flex flex-col items-center mt-28"
               variants={sectionVariants}
               custom={direction}
               initial="enter"
               animate="center"
               exit="exit"
             >
-              {/* Image */}
-              <motion.img
-                src={gameRule1}
-                alt="Game Rule 1"
-                className="w-38 md:w-80 lg:w-80 object-contain"
-                variants={sectionVariants}
-                custom={direction}
-              />
+              {/* Image wrapper (relative for buttons) */}
+              <div className="relative">
+               <motion.img
+  src={gameRule1}
+  alt="Game Rule 1"
+  className="h-[75vh] w-full object-fill"
+/>
 
-              {/* Next Button */}
-              <motion.button
-                onClick={handleNext}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="flex items-end justify-end w-[100%]"
-              >
-                <motion.img
-                  src={Right}
-                  alt="Next Button"
-                  className="w-16 md:w-16 lg:w-16 object-contain"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-                />
-              </motion.button>
+                {/* Next Button OVERLAY on bottom of image */}
+                <motion.button
+                  onClick={handleNext}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="absolute bottom-2 right-2"
+                >
+                  <motion.img
+                    src={Right}
+                    alt="Next Button"
+                    className="w-10 md:w-16 lg:w-16 object-contain"
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      repeatType: "mirror",
+                    }}
+                  />
+                </motion.button>
+              </div>
             </motion.div>
           )}
 
           {currentSection === 2 && (
             <motion.div
               key="section2"
-              className="flex flex-col items-center justify-center space-y-6"
+              className="relative flex flex-col items-center mt-28"
               variants={sectionVariants}
               custom={direction}
               initial="enter"
               animate="center"
               exit="exit"
             >
-              {/* Image */}
-              <motion.img
-                src={gameRule2}
-                alt="Game Rule 2"
-                className="w-38 md:w-80 lg:w-80 object-contain"
-                variants={sectionVariants}
-                custom={direction}
-              />
+              <div className="relative">
+                {/* Image */}
+                <motion.img
+                  src={gameRule2}
+                  alt="Game Rule 2"
+                   className="h-[75vh] w-full object-fill"
+                />
 
-              {/* Buttons Container */}
-              <motion.div
-                className="flex items-start w-[100%] justify-start gap-10 space-x-6 md:space-x-6"
-                variants={sectionVariants}
-                custom={direction}
-              >
-                {/* Back Button */}
-                <motion.button
-                  onClick={handleBack}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <motion.img
-                    src={Left}
-                    alt="Back Button"
-                    className="w-16 md:w-16 lg:w-16 object-contain"
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-                  />
-                </motion.button>
-
-                {/* Continue Button */}
-                <Link to="/pack">
+                {/* Buttons overlay at bottom */}
+                <div className="absolute bottom-0 left-2 flex gap-6">
+                  {/* Back */}
                   <motion.button
-                    onClick={handleContinue}
+                    onClick={handleBack}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
                     <motion.img
-                      src={ContinueButton}
-                      alt="Continue Button"
-                      className="w-48 md:w-48 lg:w-56 object-contain"
+                      src={Left}
+                      alt="Back Button"
+                      className="w-12 md:w-16 lg:w-16 object-contain"
                       animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                      }}
                     />
                   </motion.button>
-                </Link>
-              </motion.div>
+
+                  {/* Continue */}
+                  <Link to="/pack">
+                    <motion.button
+                      onClick={handleContinue}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                       className="pt-4"
+                    >
+                      <motion.img
+                        src={ContinueButton}
+                        alt="Continue Button"
+                        className="w-52 object-fill "
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          repeatType: "mirror",
+                        }}
+                      />
+                    </motion.button>
+                  </Link>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Transition Wave for Navigation */}
-      <AnimatePresence>
-        {showWave && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-           
-          >
-            
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

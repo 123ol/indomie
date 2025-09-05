@@ -100,7 +100,7 @@ function Game() {
 
   return (
     <div
-      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] "
+      className="w-full flex flex-col  min-h-[100vh] md:h-[160vh] "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover", 
@@ -124,17 +124,17 @@ function Game() {
       </motion.div>
       <div className="flex flex-col items-center justify-center space-y-6 pt-24 md:pt-40">
         <motion.div
-          className="text-center px-4 mb-44 md:mb-40"
+          className="text-center px-4 mb-64 md:mb-40"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
           whileHover={{ scale: 1.05 }}
         >
           <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie">
-            CATCH YOUR <br /> INDOMIE FLAVOR
+            CATCH YOUR <br /> INDOMIE FLAVORS
           </p>
-          <p className="text-white text-sm md:text-base lg:text-lg mt-4 font-gotham">
-            AND BECOM
+          <p className="text-white text-2xl md:text-3xl lg:text-4xl leading-snug font-malvie">
+            AND BECOME THIS <br/> WEEK'S HOH
           </p>
         </motion.div>
 
@@ -144,32 +144,32 @@ function Game() {
           <motion.img
             src={indomiplate}
             alt="Indomie Plate"
-            className="w-64 md:w-80 lg:w-96 object-contain"
+            className="w-[25rem] md:w-96 lg:w-[25rem] object-contain"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.6, type: "spring" }}
           />
 
           {/* Packs */}
-          <div className="absolute top-[-40px] md:top-[-80px] flex justify-center items-start">
+          <div className="absolute top-[-70px] md:top-[-80px] flex justify-center items-start">
             <motion.img
               src={indomipack1}
               alt="Indomie Pack 1"
-              className="w-20 md:w-24 lg:w-28 object-contain"
+              className="w-24 md:w-24 lg:w-28 object-contain"
               initial={{ y: -80, opacity: 0, scale: 0.8 }}
               animate={packControls1}
             />
             <motion.img
               src={indomipack2}
               alt="Indomie Pack 2"
-              className="w-20 md:w-24 lg:w-28 object-contain"
+              className="w-24 md:w-24 lg:w-28 object-contain"
               initial={{ y: -80, opacity: 0, scale: 0.8 }}
               animate={packControls2}
             />
             <motion.img
               src={indomipack3}
               alt="Indomie Pack 3"
-              className="w-20 md:w-24 lg:w-28 object-contain"
+              className="w-24 md:w-24 lg:w-28 object-contain"
               initial={{ y: -80, opacity: 0, scale: 0.8 }}
               animate={packControls3}
             />

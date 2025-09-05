@@ -5,7 +5,7 @@ import { auth, db } from "../firebase";
 import { collection, doc, setDoc, query, orderBy, limit, getDocs, where, onSnapshot, getDoc } from "firebase/firestore";
 import Game from "./BordGame";
 import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, GAME_DURATION_SEC } from "./utils";
-import { Scorereveal, backgroundImage, replay, task } from "./assets";
+import { Scorereveal, backgroundImage, replay } from "./assets";
 import indomieLogo from "../assets/Large Indomie log.png";
 import welldone from "../assets/Weldone.png";
 import leaderboard1 from "../assets/Leaderboard button.png";
@@ -15,6 +15,9 @@ import left from "../assets/Left Button.png";
 import Crayfish from "../assets/Crayfish.png";
 import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
+import task1 from "../assets/Task 1b.png";
+import task2 from "../assets/Task 2 b.png";
+import task3 from "../assets/Task 3 b.png";
 
 // Flavor definitions
 const allFlavors = [
@@ -66,6 +69,13 @@ export default function GameTaskPage() {
   });
 
   const [showFlavorSelection, setShowFlavorSelection] = useState(false);
+
+  // Task image mapping
+  const taskImages = {
+    1: task1,
+    2: task2,
+    3: task3,
+  };
 
   const navigate = useNavigate();
   const audioCatchRef = useRef(null);
@@ -474,7 +484,7 @@ export default function GameTaskPage() {
     };
     setAudioVolume();
 
-    const preloadImages = [...COMBO_GIFS, ...allFlavors.map((f) => f.img)].map(
+    const preloadImages = [...COMBO_GIFS, ...allFlavors.map((f) => f.img), task1, task2, task3].map(
       (src) =>
         new Promise((resolve) => {
           const img = new Image();
@@ -636,8 +646,8 @@ export default function GameTaskPage() {
                 className="p-0 rounded-2xl overflow-hidden"
               >
                 <motion.img
-                  src={task}
-                  alt="Start Task"
+                  src={taskImages[currentTask]}
+                  alt={`Start Task ${currentTask}`}
                   className="w-48 h-full object-cover"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
@@ -649,48 +659,41 @@ export default function GameTaskPage() {
           <div className="flex flex-col items-center pt-20">
             {currentTask === 1 && !gameOver ? (
               <>
-                <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
+                <p className="text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
                   READY TO <br /> BECOME HOH?
                 </p>
-                <p className="text-white text-2xl md:text-3xl lg:text-4xl font-bold my-4 leading-snug font-malvie">
+                <p className="text-white text-4xl font-bold leading-snug font-malvie">
                   ENTER ARENA
                 </p>
-                <img src={Scorereveal} alt="Start Game" className="w-80 rounded-lg mb-4" />
+                <img src={Scorereveal} alt="Start Game" className="w-auto absolute bottom-5" />
                 <button
                   onClick={() => startGame(1, selectedFlavors[0])}
-                  className={`p-0 rounded-2xl overflow-hidden ${
+                  className={`absolute bottom-5 left-0 w-full flex justify-center ${
                     !isReady || !selectedFlavors[0] ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
                   }`}
                   disabled={!isReady || !selectedFlavors[0]}
                 >
-                  <img src={task} alt="Task button" className="w-48 h-full object-cover" />
+                  <img
+                    src={taskImages[1]}
+                    alt="Task 1 button"
+                    className="w-56 object-contain"
+                  />
                 </button>
               </>
             ) : (
               <div className="flex flex-col items-center">
                 <div className="flex space-x-4 mb-4">
                   <div className="flex flex-col items-center">
-                    <span className="w-28 px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                    <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
                       Score
                     </span>
-                    <span className="min-w-[150px] px-4 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                    <span className="min-w-[150px] px-6 py-4 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
                       {score}
                     </span>
                   </div>
                 </div>
-                <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="w-80 rounded-lg mb-4" />
-                <div className="flex flex-wrap gap-3">
-                  {currentTask < 3 && completedTaskScores[currentTask - 1] > 0 && (
-                    <button
-                      onClick={advanceTask}
-                      className={`p-0 rounded-2xl overflow-hidden ${
-                        !isReady ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
-                      }`}
-                      disabled={!isReady}
-                    >
-                      <img src={task} alt="Task button" className="w-48 h-full object-cover" />
-                    </button>
-                  )}
+                <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="absolute bottom-5" />
+                <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
                   <button
                     onClick={() => {
                       console.log(`Replaying Task ${currentTask}`);
@@ -701,14 +704,29 @@ export default function GameTaskPage() {
                     <img
                       src={replay}
                       alt="Replay Button"
-                      className="w-36 md:w-48 lg:w-56 object-contain"
+                      className="w-56 h-full object-cover"
                     />
                   </button>
+                  {currentTask < 3 && completedTaskScores[currentTask - 1] > 0 && (
+                    <button
+                      onClick={advanceTask}
+                      className={`p-0 rounded-2xl overflow-hidden ${
+                        !isReady ? "opacity-60 cursor-not-allowed" : "hover:brightness-110"
+                      }`}
+                      disabled={!isReady}
+                    >
+                      <img
+                        src={taskImages[currentTask + 1]}
+                        alt={`Task ${currentTask + 1} button`}
+                        className="w-56 h-full object-cover"
+                      />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
           </div>
-        ) : gameActive && Array.isArray(selectedFlavors) ? ( // Only render Game if selectedFlavors is an array
+        ) : gameActive && Array.isArray(selectedFlavors) ? (
           <div className="relative">
             <div className="absolute top-2 -right-8 z-10 flex flex-col space-y-1 text-white text-sm px-3 py-2 rounded-lg">
               <div className="flex flex-col items-center">
@@ -754,14 +772,14 @@ export default function GameTaskPage() {
               <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
                 Final Score
               </span>
-              <span className="min-w-[200px] px-4 py-1 border border-orange-500 text-center text-xl text-white font-extrabold rounded-lg">
+               <span className="min-w-[200px] px-6 py-2 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
                 {score}
               </span>
             </div>
-            <img src={Scorereveal} alt="End Game" className="w-80 rounded-lg mb-4" />
-            <div className="flex flex-wrap gap-3">
+            <img src={Scorereveal} alt="End Game" className="w-auto absolute bottom-5" />
+             <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
               <button onClick={() => setActiveSection("endTask")}>
-                <img src={EndTask} alt="End Task" className="w-36 rounded-lg mt-4" />
+                <img src={EndTask} alt="End Task"     className="w-56 h-full object-cover" />
               </button>
               <button
                 onClick={() => {
@@ -769,8 +787,9 @@ export default function GameTaskPage() {
                   fetchLeaderboardFromServer();
                   setActiveSection("leaderboard");
                 }}
+                
               >
-                <img src={leaderboard1} alt="leader" className="w-36 rounded-lg mt-4" />
+                <img src={leaderboard1} alt="Leaderboard"     className="w-56 h-full object-cover" />
               </button>
             </div>
           </div>
@@ -781,7 +800,7 @@ export default function GameTaskPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="flex flex-col items-center pt-20"
           >
-            <img src={welldone} alt="End Task" className="w-80 rounded-lg mt-4" />
+            <img src={welldone} alt="Well Done" className="w-80 rounded-lg mt-4" />
             <button
               onClick={handleReplayAll}
               className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"

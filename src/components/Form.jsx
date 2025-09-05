@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import backgroundImage from "../assets/Intro Background.png";
+import backgroundImage from "../assets/Other stage background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
 import Transition from "../assets/Na you get am.gif";
@@ -135,7 +135,7 @@ function Form() {
 
   return (
     <div
-      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col h-[100vh] md:h-[160vh] p-4"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -172,10 +172,10 @@ function Form() {
           }}
         >
           <motion.h2
-            className="text-2xl md:text-3xl font-bold text-white"
+            className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center"
             variants={inputVariants}
           >
-            {isSignUp ? "Sign Up" : "Log In"}
+            {isSignUp ? "SIGN UP FILLING YOUR ENTRY HOUSEMATE" : "LOG IN FILLING YOUR ENTRY HOUSEMATE"}
           </motion.h2>
 
           {error && (
@@ -191,7 +191,7 @@ function Form() {
 
           {isSignUp && (
             <motion.div className="w-full" variants={inputVariants}>
-              <label htmlFor="name" className="block text-white mb-2">
+              <label htmlFor="name" className="block text-yellow-400 leading-snug font-malvie mb-2">
                 Name
               </label>
               <input
@@ -200,14 +200,14 @@ function Form() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 placeholder="Enter your name"
               />
             </motion.div>
           )}
 
           <motion.div className="w-full" variants={inputVariants}>
-            <label htmlFor="email" className="block text-white mb-2">
+            <label htmlFor="email" className="block text-yellow-400 leading-snug font-malvie mb-2">
               Email
             </label>
             <input
@@ -216,14 +216,14 @@ function Form() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               placeholder="Enter your email"
             />
           </motion.div>
 
           {isSignUp && (
             <motion.div className="w-full" variants={inputVariants}>
-              <label htmlFor="phone" className="block text-white mb-2">
+              <label htmlFor="phone" className="block text-yellow-400 leading-snug font-malvie mb-2">
                 Phone Number
               </label>
               <input
@@ -232,14 +232,14 @@ function Form() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 placeholder="Enter your phone number"
               />
             </motion.div>
           )}
 
           <motion.div className="w-full" variants={inputVariants}>
-            <label htmlFor="password" className="block text-white mb-2">
+            <label htmlFor="password" className="block text-yellow-400 leading-snug font-malvie mb-2">
               Password
             </label>
             <input
@@ -248,7 +248,7 @@ function Form() {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               placeholder="Enter your password"
             />
           </motion.div>
@@ -272,7 +272,7 @@ function Form() {
 
           <motion.button
             onClick={toggleAuthMode}
-            className="text-yellow-400 text-sm underline"
+            className="text-yellow-400 text-sm underline  leading-snug font-malvie"
             variants={inputVariants}
           >
             {isSignUp ? "Already have an account? Log in" : "Need an account? Sign up"}

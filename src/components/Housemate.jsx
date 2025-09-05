@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import backgroundImage from "../assets/Intro Background.png";
+import backgroundImage from "../assets/Other stage background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
 import Transition from "../assets/Na you get am.gif";
@@ -96,7 +96,7 @@ function Housemate() {
 
   return (
     <div
-      className="w-full flex flex-col rounded-2xl h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col  h-[100vh] md:h-[160vh] p-4"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -146,7 +146,7 @@ function Housemate() {
         >
           {/* Title */}
           <motion.h2
-            className="text-2xl md:text-3xl font-bold text-yellow-400 leading-snug font-malvie mb-16"
+            className="text-2xl md:text-3xl font-bold text-yellow-400 leading-snug font-malvie py-10"
             variants={imageVariants}
             custom={0}
           >
@@ -154,13 +154,13 @@ function Housemate() {
           </motion.h2>
 
           {/* Housemate Images */}
-          <div className="flex justify-center items-center space-x-4 md:space-x-6">
+          <div className="flex justify-center items-center space-x-4 md:space-x-6 h-fit">
             {housemates.map((housemate, i) => (
               <div key={housemate.name} className="relative">
                 <motion.img
                   src={housemate.img}
                   alt={`${housemate.name} Image`}
-                  className="w-32 md:w-40 lg:w-48 object-contain cursor-pointer mb-6"
+                  className="w-44 object-contain cursor-pointer "
                   variants={imageVariants}
                   initial="hidden"
                   animate="visible"
@@ -191,6 +191,7 @@ function Housemate() {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
+                className="absolute bottom-5 left-0 w-full flex justify-center"
               >
                 <motion.button
                   onClick={handleContinue}
@@ -200,7 +201,7 @@ function Housemate() {
                   <motion.img
                     src={ContinueButton}
                     alt="Continue Button"
-                    className="w-36 md:w-48 lg:w-56 object-contain"
+                    className="w-56 object-contain"
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
                   />
@@ -219,17 +220,9 @@ function Housemate() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black"
+            className="absolute inset-0 z-50 flex items-center justify-center "
           >
-            <motion.img
-              src={Transition}
-              alt="Wave Transition"
-              className="w-full h-full object-cover"
-              initial={{ scale: 1.2, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-            />
+          
           </motion.div>
         )}
       </AnimatePresence>

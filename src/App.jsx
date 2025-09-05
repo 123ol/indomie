@@ -23,7 +23,7 @@ const App = () => {
           path="/"
           element={
             
-              <div className="w-full max-w-4xl  backdrop-blur rounded-2xl shadow-lg" >
+              <div className="w-full max-w-4xl  backdrop-blur  shadow-lg" >
                 <Game />
               </div>
            
@@ -36,7 +36,7 @@ const App = () => {
           path="/pack"
           element={
             
-              <div className="w-full max-w-4xl   rounded-2xl backdrop-blur  shadow-lg">
+              <div className="w-full max-w-4xl    backdrop-blur  shadow-lg">
                <Pack />
               </div>
            
@@ -47,7 +47,7 @@ const App = () => {
           path="/form"
           element={
             
-              <div className="w-full max-w-4xl  rounded-2xl backdrop-blur  shadow-lg">
+              <div className="w-full max-w-4xl   backdrop-blur  shadow-lg">
                <Form />
               </div>
            
@@ -57,7 +57,7 @@ const App = () => {
           path="/housemate"
           element={
             
-              <div className="w-full max-w-4xl   rounded-2xl backdrop-blur  shadow-lg">
+              <div className="w-full max-w-4xl    backdrop-blur  shadow-lg">
                <Housemate />
               </div>
            
@@ -67,7 +67,7 @@ const App = () => {
           path="/GameTask"
           element={
             
-              <div className="w-full max-w-4xl   rounded-2xl backdrop-blur  shadow-lg">
+              <div className="w-full max-w-4xl    backdrop-blur  shadow-lg">
                <GameTaskPage />
               </div>
            
@@ -78,7 +78,7 @@ const App = () => {
           path="/Rules"
           element={
             
-              <div className="w-full max-w-4xl   rounded-2xl backdrop-blur  shadow-lg">
+              <div className="w-full max-w-4xl    backdrop-blur  shadow-lg">
                <Rules />
               </div>
            

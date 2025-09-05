@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import backgroundImage from "../assets/Intro Background.png";
+import backgroundImage from "../assets/Other stage background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
-import Crayfish from "../assets/Crayfish.png";
-import Peppersoup from "../assets/Pepper soup noodle.png";
-import OrientalNoodle from "../assets/Oriental Noodle.png";
+import Crayfish from "../assets/Crayfish 2.png";
+import Peppersoup from "../assets/Peppersoup 2.png";
+import OrientalNoodle from "../assets/Oriental 1.png";
 
 function Pack() {
   const navigate = useNavigate();
@@ -39,9 +39,10 @@ function Pack() {
 
   // Flavors array
   const flavours = [
-    { img: Crayfish, name: "Crayfish" },
-    { img: Peppersoup, name: "Peppersoup" },
-    { img: OrientalNoodle, name: "Oriental" },
+    { img: Crayfish, name: "Crayfish",  text:'CRAYFISH FLAVOR'},
+    { img: OrientalNoodle, name: "Oriental" ,  text: "ORIENTAL FRIED NOODLES"},
+    { img: Peppersoup, name: "Peppersoup" ,  text:'CHICKEN PEPPERSOUP'},
+    
   ];
 
   // Animation variants for images
@@ -69,7 +70,7 @@ function Pack() {
 
   return (
     <div
-      className="w-full flex flex-col h-[100vh] md:h-[120vh] overflow-hidden p-12 "
+      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-6 "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -93,7 +94,7 @@ function Pack() {
       </motion.div>
 
       {/* Content */}
-      <div className="flex flex-col items-center justify-center space-y-6 pt-36">
+      <div className="flex flex-col items-center justify-center space-y-6 pt-48">
         {/* Title */}
         <motion.div
           className="text-center px-4 mb-16"
@@ -113,23 +114,26 @@ function Pack() {
             <div key={flavour.name} className="relative">
               <motion.img
                 src={flavour.img}
-                alt={`${flavour.name} Pack`}
-                className="w-44 md:w-24 lg:w-28 object-contain cursor-pointer"
+                alt={`${flavour.text} Pack`}
+                className="w-52  object-contain cursor-pointer"
                 initial="hidden"
                 animate="visible"
                 variants={imageVariants}
                 custom={i}
                 onClick={() => handleFlavorSelect(flavour.name)}
-              />
+              /> <p className="text-white mt-2 text-center text-xl leading-snug font-malvie">{flavour.text}</p>
               <AnimatePresence>
                 {selectedFlavor === flavour.name && (
+                  <div>
                   <motion.div
                     className="absolute inset-0 border-4 border-yellow-400 rounded-lg"
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
                     variants={borderVariants}
-                  />
+                  /> 
+                 
+                  </div>
                 )}
               </AnimatePresence>
             </div>
@@ -139,28 +143,23 @@ function Pack() {
         {/* Continue Button (appears after selection) */}
         <AnimatePresence>
           {selectedFlavor && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              className=""
-              transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
-            >
-              <motion.button
-                onClick={handleContinue}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-0 rounded-2xl overflow-hidden"
-              >
-                <motion.img
-                  src={ContinueButton}
-                  alt="Continue Button"
-                  className="w-36 md:w-48 lg:w-56 object-contain"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-                />
-              </motion.button>
-            </motion.div>
+          <motion.div className="absolute bottom-5 left-0 w-full flex justify-center">
+  <motion.button
+    onClick={handleContinue}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    className="p-0 rounded-2xl overflow-hidden"
+  >
+    <motion.img
+      src={ContinueButton}
+      alt="Continue Button"
+      className="w-56 object-contain"
+      animate={{ scale: [1, 1.05, 1] }}
+      transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+    />
+  </motion.button>
+</motion.div>
+
           )}
         </AnimatePresence>
       </div>
