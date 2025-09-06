@@ -17,6 +17,7 @@ import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
 import task1 from "../assets/Task 1b.png";
 import task2 from "../assets/Task 2 b.png";
+import playAgin from "../assets/Play Again.png"
 import task3 from "../assets/Task 3 b.png";
 
 // Flavor definitions
@@ -104,6 +105,22 @@ export default function GameTaskPage() {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1.1, transition: { duration: 0.3, ease: "easeOut" } },
   };
+
+ // Clear local storage on page refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      try {
+        localStorage.removeItem("taskFlavors");
+        localStorage.removeItem("selectedFlavor");
+        console.log("Cleared localStorage on page refresh");
+      } catch (error) {
+        console.error("Failed to clear localStorage on refresh:", error);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // Monitor authentication state
   useEffect(() => {
@@ -800,13 +817,18 @@ export default function GameTaskPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="flex flex-col items-center pt-20"
           >
-            <img src={welldone} alt="Well Done" className="w-80 rounded-lg mt-4" />
+            <img src={welldone} alt="Well Done" className="w-80 rounded-lg mt-16" />
             <button
-              onClick={handleReplayAll}
-              className="px-5 py-2 rounded-2xl bg-emerald-600 text-white"
-            >
-              Play Again
-            </button>
+                   onClick={handleReplayAll}
+                      className='absolute bottom-5 left-0 w-full flex justify-center'
+                    
+                    >
+                      <img
+                        src={playAgin}
+                        alt=''
+                        className="w-56 h-full object-cover"
+                      />
+                    </button>
           </motion.div>
         )}
         {activeSection === "leaderboard" && (
