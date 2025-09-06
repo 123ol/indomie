@@ -22,7 +22,7 @@ export const COMBO_GIFS = [
 ];
 
 export const COMBO_SOUNDS = [
-  HurraySound,
+  ComboSound,
   ComboSound,
 ];
 
