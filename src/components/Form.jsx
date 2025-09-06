@@ -135,7 +135,7 @@ function Form() {
 
   return (
     <div
-      className="w-full flex flex-col h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col min-h-screen h-[120vh] p-4"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -157,7 +157,7 @@ function Form() {
         />
       </motion.div>
 
-      <div className="flex flex-col items-center justify-center space-y-6 flex-grow">
+      <div className="flex flex-col items-center justify-center space-y-6 mt-[30%] ">
         <motion.div
           className="flex flex-col items-center justify-center space-y-6 w-full max-w-md p-6 rounded-xl"
           style={{
@@ -253,22 +253,7 @@ function Form() {
             />
           </motion.div>
 
-          <motion.div variants={buttonVariants}>
-            <motion.button
-              onClick={handleSubmit}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              disabled={isLoading}
-            >
-              <motion.img
-                src={ContinueButton}
-                alt="Submit Button"
-                className={`w-36 md:w-48 lg:w-56 object-contain ${isLoading ? "opacity-50" : ""}`}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-              />
-            </motion.button>
-          </motion.div>
+        
 
           <motion.button
             onClick={toggleAuthMode}
@@ -278,6 +263,23 @@ function Form() {
             {isSignUp ? "Already have an account? Log in" : "Need an account? Sign up"}
           </motion.button>
         </motion.div>
+
+          <motion.div variants={buttonVariants} className="absolute bottom-2 left-0 w-full flex justify-center ">
+            <motion.button
+              onClick={handleSubmit}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              disabled={isLoading}
+            >
+              <motion.img
+                src={ContinueButton}
+                alt="Submit Button"
+                className={`w-56 object-contain ${isLoading ? "opacity-50" : ""}`}
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+              />
+            </motion.button>
+          </motion.div>
       </div>
 
       <AnimatePresence>

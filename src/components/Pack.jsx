@@ -70,7 +70,7 @@ function Pack() {
 
   return (
     <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-6 "
+      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-2 "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -94,7 +94,7 @@ function Pack() {
       </motion.div>
 
       {/* Content */}
-      <div className="flex flex-col items-center justify-center space-y-6 pt-48">
+      <div className="flex flex-col items-center justify-center space-y-6 pt-32">
         {/* Title */}
         <motion.div
           className="text-center px-4 mb-16"
@@ -103,19 +103,19 @@ function Pack() {
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
           whileHover={{ scale: 1.05 }}
         >
-          <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
+          <p className="text-3xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
             WHICH FLAVOR ARE <br /> YOU HAVING FIRST?
           </p>
         </motion.div>
 
         {/* Flavors Side by Side */}
-        <div className="flex justify-center items-center space-x-4 md:space-x-6 lg:space-x-8 mb-20">
+        <div className="flex justify-center items-center space-x-4 md:space-x-6 lg:space-x-8 mb-20 m-auto">
           {flavours.map((flavour, i) => (
             <div key={flavour.name} className="relative">
               <motion.img
                 src={flavour.img}
                 alt={`${flavour.text} Pack`}
-                className="w-52  object-contain cursor-pointer"
+                className="max-w-24  object-contain cursor-pointer m-auto"
                 initial="hidden"
                 animate="visible"
                 variants={imageVariants}

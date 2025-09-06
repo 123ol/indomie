@@ -124,7 +124,7 @@ function Game() {
       </motion.div>
       <div className="flex flex-col items-center justify-center space-y-6 pt-24 md:pt-40">
         <motion.div
-          className="text-center px-4 mb-64 md:mb-40"
+          className="text-center pb-4 mb-60 "
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
@@ -151,7 +151,7 @@ function Game() {
           />
 
           {/* Packs */}
-          <div className="absolute top-[-70px] md:top-[-80px] flex justify-center items-start">
+          <div className="absolute top-[-90px] md:top-[-80px] flex justify-center items-start">
             <motion.img
               src={indomipack1}
               alt="Indomie Pack 1"
@@ -190,7 +190,7 @@ function Game() {
             <motion.img
               src={playButton}
               alt="Play Button"
-              className="w-36 md:w-48 lg:w-56 object-contain"
+              className="w-56 object-contain"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
             />

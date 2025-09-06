@@ -12,12 +12,15 @@ import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
 import Housemate1 from "../assets/Arena Male Character.png";
 import Housemate2 from "../assets/Female carrying Charater.png";
+import pepper from "../assets/Asset 7-8.png";
+import crayfish from "../assets/Crayfsih.png";
+import carrot from "../assets/carot.png";
 
-// Mapping of flavor names to their images
-const flavorImages = {
-  Crayfish: Crayfish,
-  Peppersoup: Peppersoup,
-  Oriental: OrientalNoodle,
+// Unified mapping of flavors to their images for apple and mango
+const flavorImageMap = {
+  Crayfish: { apple: Crayfish, mango: crayfish },
+  Peppersoup: { apple: Peppersoup, mango: pepper },
+  Oriental: { apple: OrientalNoodle, mango: carrot },
 };
 
 // Mapping of housemate names to their images
@@ -27,22 +30,24 @@ const housemateImages = {
 };
 
 export const getImages = (taskNumber, selectedFlavors) => {
-  // Retrieve selectedHousemate from localStorage, fallback to "Housemate1" if not found
+  // Retrieve selectedHousemate from localStorage, fallback to "Housemate1"
   const selectedHousemate = localStorage.getItem("selectedHousemate") || "Housemate1";
 
-  // Fallback to an empty array if selectedFlavors is undefined or null
+  // Ensure selectedFlavors is an array, fallback to [null, null, null]
   const flavors = Array.isArray(selectedFlavors) ? selectedFlavors : [null, null, null];
   const selectedFlavor = flavors[taskNumber - 1] || "Crayfish"; // Fallback to Crayfish
 
   console.log(
-    `getImages: taskNumber=${taskNumber}, selectedFlavor=${selectedFlavor}, selectedFlavors=${JSON.stringify(
-      flavors
-    )}, selectedHousemate=${selectedHousemate}`
+    `getImages: taskNumber=${taskNumber}, selectedFlavor=${selectedFlavor}, ` +
+    `selectedFlavors=${JSON.stringify(flavors)}, selectedHousemate=${selectedHousemate}`
   );
 
+  // Get the image set for the selected flavor, fallback to Crayfish
+  const images = flavorImageMap[selectedFlavor] || flavorImageMap.Crayfish;
+
   return {
-    apple: Object.assign(new Image(), { src: flavorImages[selectedFlavor] || Crayfish }),
-    mango: Object.assign(new Image(), { src: mangoImg }),
+    apple: Object.assign(new Image(), { src: images.apple }),
+    mango: Object.assign(new Image(), { src: images.mango }), // Always matches the selected flavor
     nut: Object.assign(new Image(), { src: nutImg }),
     bomb: Object.assign(new Image(), { src: bombImg }),
     bomb2: Object.assign(new Image(), { src: bombImg2 }),

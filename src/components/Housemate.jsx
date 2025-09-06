@@ -96,7 +96,7 @@ function Housemate() {
 
   return (
     <div
-      className="w-full flex flex-col  h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col  h-[110vh] p-4"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -146,7 +146,7 @@ function Housemate() {
         >
           {/* Title */}
           <motion.h2
-            className="text-2xl md:text-3xl font-bold text-yellow-400 leading-snug font-malvie py-10"
+            className="text-3xl font-bold text-yellow-400 leading-snug font-malvie py-10"
             variants={imageVariants}
             custom={0}
           >

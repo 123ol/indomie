@@ -1,7 +1,8 @@
 import NaYouGetAm from "../assets/Na you get am.gif";
 import Flavour from "../assets/Flavour.gif";
 import SpiceHit from "../assets/Spice hit.gif";
-// import HurraySound from "../assets/sounds/HURRAY SOUND.mp3";
+import TimeUpGif from "../assets/original-a35eb521d8e794acaa44d2937c035ce3.gif"; 
+import GameOverGif from "../assets/game-over-game.gif"; 
 import ComboSound from "../assets/sounds/COMBO SOUND.mp3";
 
 export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -16,9 +17,11 @@ export const debounce = (func, wait) => {
 };
 
 export const COMBO_GIFS = [
-  NaYouGetAm,
-  Flavour,
-  SpiceHit,
+  NaYouGetAm,    // Index 0
+  Flavour,        // Index 1
+  SpiceHit,       // Index 2
+  TimeUpGif,      // Index 3
+  GameOverGif,    // Index 4
 ];
 
 export const COMBO_SOUNDS = [
@@ -27,6 +30,8 @@ export const COMBO_SOUNDS = [
 
 export const SOUND_CATCH = "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg";
 export const SOUND_OBSTACLE = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg";
+export const SOUND_TIME_UP = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg";
+export const SOUND_GAME_OVER = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg";
 
 export const API_BASE = "/api";
 export const ENDPOINT_SAVE = `${API_BASE}/leaderboard`;

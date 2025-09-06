@@ -3,24 +3,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { collection, doc, setDoc, query, orderBy, limit, getDocs, where, onSnapshot, getDoc } from "firebase/firestore";
-import html2canvas from "html2canvas"; // Added for image generation
 import Game from "./BordGame";
-import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, GAME_DURATION_SEC } from "./utils";
+import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, GAME_DURATION_SEC, SOUND_TIME_UP, SOUND_GAME_OVER } from "./utils";
 import { Scorereveal, backgroundImage, replay } from "./assets";
 import indomieLogo from "../assets/Large Indomie log.png";
-import welldone from "../assets/Weldone.png";
+import welldone from "../assets/Weldonenew.png";
 import leaderboard1 from "../assets/Leaderboard button.png";
 import EndTask from "../assets/End task.png";
 import share from "../assets/Share button.png";
 import left from "../assets/Left Button.png";
-import Crayfish from "../assets/Crayfish.png";
-import Peppersoup from "../assets/Pepper soup noodle.png";
-import OrientalNoodle from "../assets/Oriental Noodle.png";
+import Crayfish from "../assets/Crayfish 2.png";
+import Peppersoup from "../assets/Peppersoup 2.png";
+import OrientalNoodle from "../assets/Oriental 1.png";
 import task1 from "../assets/Task 1b.png";
 import task2 from "../assets/Task 2 b.png";
 import playAgin from "../assets/Play Again.png";
 import task3 from "../assets/Task 3 b.png";
 import Transition from "../assets/Elevator door.gif";
+import leaderbg from "../assets/Asset 4-8.png";
+import longList from "../assets/Asset 5-8.png";
+import shear from "../assets/Asset 9-8.png";
+import { FaWhatsapp, FaFacebook, FaXTwitter } from "react-icons/fa6";
 
 // Flavor definitions
 const allFlavors = [
@@ -44,13 +47,16 @@ export default function GameTaskPage() {
   const [isReady, setIsReady] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.9);
-  const [canvasSize, setCanvasSize] = useState({ w: 800, h: 520 });
+  const [canvasSize, setCanvasSize] = useState({ w: 1000, h: 520 });
   const [assetError, setAssetError] = useState(null);
   const [basketHeight, setBasketHeight] = useState(150);
   const [activeSection, setActiveSection] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [leaderboardFilter, setLeaderboardFilter] = useState("all");
   const [notification, setNotification] = useState(null);
+  const [showTimeUp, setShowTimeUp] = useState(false);
+  const [showGameOver, setShowGameOver] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [selectedFlavors, setSelectedFlavors] = useState(() => {
     try {
       const saved = localStorage.getItem("taskFlavors");
@@ -72,8 +78,10 @@ export default function GameTaskPage() {
   });
   const [showFlavorSelection, setShowFlavorSelection] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false); // New state for share modal
-  const leaderboardRef = useRef(null); // Ref for capturing leaderboard
+  const [showShareModal, setShowShareModal] = useState(false);
+  const leaderboardRef = useRef(null);
+  const audioTimeUpRef = useRef(null);
+  const audioGameOverRef = useRef(null);
 
   // Task image mapping
   const taskImages = {
@@ -213,6 +221,9 @@ export default function GameTaskPage() {
         setLives(3);
         setTimeLeft(GAME_DURATION_SEC);
         setComboGif(null);
+        setShowTimeUp(false);
+        setShowGameOver(false);
+        setIsPaused(false);
         console.log(`Game started: gameActive=true, task=${taskNumber}`);
       }, 3000);
     },
@@ -253,6 +264,7 @@ export default function GameTaskPage() {
       setShowFlavorSelection(true);
       setGameActive(false);
       setGameOver(false);
+      setIsPaused(false);
     }
   }, [currentTask]);
 
@@ -279,6 +291,9 @@ export default function GameTaskPage() {
     setActiveSection(null);
     setComboGif(null);
     setShowFlavorSelection(true);
+    setShowTimeUp(false);
+    setShowGameOver(false);
+    setIsPaused(false);
   }, []);
 
   const playCatch = useCallback(() => {
@@ -299,6 +314,18 @@ export default function GameTaskPage() {
     const audio = audioComboRefs.current[randomIndex];
     audio.currentTime = 0;
     audio.play().catch(() => {});
+  }, [isMuted]);
+
+  const playTimeUp = useCallback(() => {
+    if (!audioTimeUpRef.current || isMuted) return;
+    audioTimeUpRef.current.currentTime = 0;
+    audioTimeUpRef.current.play().catch(() => {});
+  }, [isMuted]);
+
+  const playGameOver = useCallback(() => {
+    if (!audioGameOverRef.current || isMuted) return;
+    audioGameOverRef.current.currentTime = 0;
+    audioGameOverRef.current.play().catch(() => {});
   }, [isMuted]);
 
   const handleComboTriggered = useCallback(
@@ -416,7 +443,6 @@ export default function GameTaskPage() {
     [currentUser, fetchLeaderboardFromServer, navigate]
   );
 
-  // New function to get user's rank
   const getUserRank = useCallback(() => {
     if (!currentUser || !leaderboard.length) return null;
     const userEntry = leaderboard.find((entry) => entry.uid === currentUser.uid);
@@ -425,7 +451,6 @@ export default function GameTaskPage() {
     return { rank, score: userEntry.score };
   }, [currentUser, leaderboard]);
 
-  // New function to handle sharing
   const handleShare = useCallback(async () => {
     if (!currentUser) {
       setNotification({ type: "error", message: "Please log in to share your rank." });
@@ -442,71 +467,67 @@ export default function GameTaskPage() {
     setShowShareModal(true);
   }, [currentUser, getUserRank, navigate]);
 
-  // New function to share to Twitter/X
-  const shareToTwitter = useCallback(() => {
+  const shareToX = useCallback(() => {
     const userRank = getUserRank();
     if (!userRank) return;
 
     const text = `I ranked #${userRank.rank} with a score of ${userRank.score} on the Indomie HOH game! 🏆 Try to beat me!`;
     const url = encodeURIComponent(window.location.origin);
     const hashtags = "IndomieHOH,GameChallenge";
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}&hashtags=${hashtags}`;
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}&hashtags=${hashtags}`;
     
-    window.open(twitterUrl, "_blank");
+    window.open(xUrl, "_blank");
     setShowShareModal(false);
   }, [getUserRank]);
 
-  // New function to share to Instagram
-  const shareToInstagram = useCallback(async () => {
-    if (!leaderboardRef.current) {
-      setNotification({ type: "error", message: "Leaderboard not available for sharing." });
-      return;
-    }
+  const shareToWhatsApp = useCallback(() => {
+    const userRank = getUserRank();
+    if (!userRank) return;
 
-    try {
-      const canvas = await html2canvas(leaderboardRef.current, {
-        backgroundColor: null,
-        scale: 2,
-      });
-      const imgData = canvas.toDataURL("image/png");
+    const text = `I ranked #${userRank.rank} with a score of ${userRank.score} on the Indomie HOH game! 🏆 Try to beat me! ${window.location.origin} #IndomieHOH #GameChallenge`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    
+    window.open(whatsappUrl, "_blank");
+    setShowShareModal(false);
+  }, [getUserRank]);
 
-      // Create a temporary link to download the image
-      const link = document.createElement("a");
-      link.href = imgData;
-      link.download = `IndomieHOH_Leaderboard_${currentUser?.displayName || "Player"}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const shareToFacebook = useCallback(() => {
+    const userRank = getUserRank();
+    if (!userRank) return;
 
-      setNotification({
-        type: "success",
-        message: "Leaderboard image downloaded! Upload it to Instagram manually.",
-      });
-      setShowShareModal(false);
-    } catch (err) {
-      console.error("Failed to generate leaderboard image:", err);
-      setNotification({ type: "error", message: "Failed to generate leaderboard image." });
-    }
-  }, [currentUser]);
+    const text = `I ranked #${userRank.rank} with a score of ${userRank.score} on the Indomie HOH game! 🏆 Try to beat me!`;
+    const url = encodeURIComponent(window.location.origin);
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${encodeURIComponent(text)}`;
+    
+    window.open(facebookUrl, "_blank");
+    setShowShareModal(false);
+  }, [getUserRank]);
 
   const handleGameEnd = useCallback(() => {
     console.log(`Game ended for Task ${currentTask}, current score: ${score}`);
-    setGameActive(false);
-    setTimeLeft(GAME_DURATION_SEC);
-    setComboGif(null);
-    saveTaskScore();
-    if (currentTask === 3) {
-      console.log("Task 3 completed, going to end game section");
-      const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
-      const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
-      console.log(`Saving final score to leaderboard: ${totalScore}`);
-      saveHighScoreToServer(entry);
-      setCurrentTask(4);
-    } else {
-      console.log(`Task ${currentTask} completed, showing task transition section`);
-      setGameOver(true);
-    }
-  }, [score, currentTask, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]);
+    setIsPaused(true); // Pause the game
+    setShowTimeUp(true); // Show Time Up GIF in canvas
+    playTimeUp(); // Play Time Up sound
+    setTimeout(() => {
+      setGameActive(false);
+      setTimeLeft(GAME_DURATION_SEC);
+      setComboGif(null);
+      setShowTimeUp(false); // Clear notification
+      setIsPaused(false); // Resume game (for UI transition)
+      saveTaskScore();
+      if (currentTask === 3) {
+        console.log("Task 3 completed, going to end game section");
+        const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
+        const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
+        console.log(`Saving final score to leaderboard: ${totalScore}`);
+        saveHighScoreToServer(entry);
+        setCurrentTask(4);
+      } else {
+        console.log(`Task ${currentTask} completed, showing task transition section`);
+        setGameOver(true);
+      }
+    }, 3000); // Pause for 3 seconds
+  }, [score, currentTask, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser, playTimeUp]);
 
   const debouncedHandleScoreDelta = useCallback(
     debounce((delta) => {
@@ -525,19 +546,26 @@ export default function GameTaskPage() {
           const newLives = Math.max(0, prev - 1);
           console.log(`Lives reduced to ${newLives}`);
           if (newLives === 0) {
-            setGameActive(false);
-            saveTaskScore();
-            if (currentTask === 3) {
-              console.log("Task 3 ended with 0 lives, going to end game section");
-              const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
-              const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
-              console.log(`Saving final score to leaderboard: ${totalScore}`);
-              saveHighScoreToServer(entry);
-              setCurrentTask(4);
-            } else {
-              console.log(`Task ${currentTask} ended with 0 lives, showing game over`);
-              setGameOver(true);
-            }
+            setIsPaused(true); // Pause the game
+            setShowGameOver(true); // Show Game Over GIF in canvas
+            playGameOver(); // Play Game Over sound
+            setTimeout(() => {
+              setGameActive(false);
+              setShowGameOver(false); // Clear notification
+              setIsPaused(false); // Resume game (for UI transition)
+              saveTaskScore();
+              if (currentTask === 3) {
+                console.log("Task 3 ended with 0 lives, going to end game section");
+                const totalScore = completedTaskScores.slice(0, 2).reduce((a, b) => a + b, 0) + (score - getPreviousSum(currentTask));
+                const entry = { score: totalScore, player: currentUser?.displayName || "Player", date: new Date().toISOString() };
+                console.log(`Saving final score to leaderboard: ${totalScore}`);
+                saveHighScoreToServer(entry);
+                setCurrentTask(4);
+              } else {
+                console.log(`Task ${currentTask} ended with 0 lives, showing game over`);
+                setGameOver(true);
+              }
+            }, 3000); // Pause for 3 seconds
           }
           return newLives;
         });
@@ -548,7 +576,7 @@ export default function GameTaskPage() {
         });
       }
     }, 50),
-    [playCatch, playObstacle, playCombo, score, currentTask, lives, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]
+    [playCatch, playObstacle, playCombo, playGameOver, score, currentTask, lives, saveHighScoreToServer, saveTaskScore, completedTaskScores, getPreviousSum, currentUser]
   );
 
   const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
@@ -574,11 +602,15 @@ export default function GameTaskPage() {
     audioCatchRef.current = new Audio(SOUND_CATCH);
     audioObstacleRef.current = new Audio(SOUND_OBSTACLE);
     audioComboRefs.current = COMBO_SOUNDS.map((src) => new Audio(src));
+    audioTimeUpRef.current = new Audio(SOUND_TIME_UP);
+    audioGameOverRef.current = new Audio(SOUND_GAME_OVER);
 
     const setAudioVolume = () => {
       audioCatchRef.current.volume = volume;
       audioObstacleRef.current.volume = volume;
       audioComboRefs.current.forEach((audio) => (audio.volume = volume));
+      audioTimeUpRef.current.volume = volume;
+      audioGameOverRef.current.volume = volume;
     };
     setAudioVolume();
 
@@ -598,7 +630,13 @@ export default function GameTaskPage() {
         })
     );
 
-    const preloadAudio = [audioCatchRef.current, audioObstacleRef.current, ...audioComboRefs.current].map(
+    const preloadAudio = [
+      audioCatchRef.current,
+      audioObstacleRef.current,
+      ...audioComboRefs.current,
+      audioTimeUpRef.current,
+      audioGameOverRef.current,
+    ].map(
       (audio) =>
         new Promise((resolve) => {
           const cleanup = () => {
@@ -644,17 +682,18 @@ export default function GameTaskPage() {
 
   // Log rendering state
   useEffect(() => {
-    console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, showTransition=${showTransition}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}, showShareModal=${showShareModal}`);
-  }, [gameActive, showFlavorSelection, showTransition, currentTask, activeSection, gameOver, showShareModal]);
+    console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, showTransition=${showTransition}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}, showShareModal=${showShareModal}, showTimeUp=${showTimeUp}, showGameOver=${showGameOver}, isPaused=${isPaused}`);
+  }, [gameActive, showFlavorSelection, showTransition, currentTask, activeSection, gameOver, showShareModal, showTimeUp, showGameOver, isPaused]);
 
   return (
     <div
-      className="h-[100vh] md:h-[160vh] w-full flex flex-col items-center p-4 sm:p-6 md:p-10 relative"
+      className="h-[100vh] w-full items-center relative overflow-hidden"
       style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
+        backgroundImage: gameActive ? "none" : `url(${backgroundImage})`,
+        backgroundSize: gameActive ? "auto" : "cover",
+        backgroundPosition: gameActive ? "center" : "top center",
+        backgroundRepeat: gameActive ? "no-repeat" : "no-repeat",
+        backgroundColor: gameActive ? "#cf0007" : "transparent",
         width: "100%",
       }}
     >
@@ -679,42 +718,67 @@ export default function GameTaskPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <AnimatePresence>
-        {showShareModal && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    <AnimatePresence>
+  {showShareModal && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+    >
+      <div
+        className="w-full max-w-md p-6 sm:p-10 text-white rounded-2xl flex flex-col items-center bg-cover bg-center"
+        style={{
+          backgroundImage: `url(${shear})`,
+        }}
+      >
+        <h3 className="text-lg sm:text-xl font-bold mb-2 text-center font-malvie text-yellow-400">
+          Share Your Rank
+        </h3>
+        <p className="mb-4 text-sm sm:text-base text-center font-malvie text-yellow-400">
+          Choose a platform to share your leaderboard rank:
+        </p>
+
+        <div className="flex gap-4 justify-center flex-wrap">
+          {/* X (Twitter) */}
+          <button
+            onClick={shareToX}
+            className="p-3 rounded-full bg-black hover:bg-gray-800 text-white flex items-center justify-center shadow"
           >
-            <div className="bg-[#6B3E1D] p-6 rounded-lg shadow-lg text-white">
-              <h3 className="text-xl font-bold mb-4">Share Your Rank</h3>
-              <p className="mb-4">Choose a platform to share your leaderboard rank:</p>
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={shareToTwitter}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Twitter/X
-                </button>
-                <button
-                  onClick={shareToInstagram}
-                  className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600"
-                >
-                  Instagram
-                </button>
-                <button
-                  onClick={() => setShowShareModal(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <FaXTwitter size={22} />
+          </button>
+
+          {/* WhatsApp */}
+          <button
+            onClick={shareToWhatsApp}
+            className="p-3 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow"
+          >
+            <FaWhatsapp size={22} />
+          </button>
+
+          {/* Facebook */}
+          <button
+            onClick={shareToFacebook}
+            className="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow"
+          >
+            <FaFacebook size={22} />
+          </button>
+        </div>
+
+        <button
+          onClick={() => setShowShareModal(false)}
+          className="mt-6 px-5 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+
+
       {assetError && (
         <div className="absolute top-4 left-4 bg-red-500 text-white p-2 rounded">
           {assetError}
@@ -741,16 +805,18 @@ export default function GameTaskPage() {
             transition={{ duration: 1, ease: "easeOut" }}
             exit={{ opacity: 0 }}
           >
+          
+    {!showEndTask && currentTask !== 4 && (
             <img
               src={indomieLogo}
               alt="Indomie Logo"
               className="w-16 md:w-20 lg:w-24 h-auto"
-            />
+            />)}
           </motion.div>
         )}
       </div>
 
-      <div className="w-full max-w-4xl rounded-2xl shadow p-4 sm:p-6">
+      <div className="w-full max-w-4xl">
         {showFlavorSelection && currentTask <= 3 ? (
           <div className="flex flex-col items-center pt-20">
             <motion.div
@@ -811,13 +877,13 @@ export default function GameTaskPage() {
             )}
           </div>
         ) : !gameActive && currentTask <= 3 && !activeSection ? (
-          <div className="flex flex-col items-center pt-20">
+          <div className="flex flex-col items-center pt-16">
             {currentTask === 1 && !gameOver ? (
               <>
-                <p className="text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center">
+                <p className="text-3xl font-bold text-yellow-400 font-malvie text-center leading-none">
                   READY TO <br /> BECOME HOH?
                 </p>
-                <p className="text-white text-4xl font-bold leading-snug font-malvie">
+                <p className="text-white text-3xl font-bold font-malvie leading-none">
                   ENTER ARENA
                 </p>
                 <img src={Scorereveal} alt="Start Game" className="w-auto absolute bottom-5" />
@@ -839,10 +905,10 @@ export default function GameTaskPage() {
               <div className="flex flex-col items-center">
                 <div className="flex space-x-4 mb-4">
                   <div className="flex flex-col items-center">
-                    <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+                    <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
                       Score
                     </span>
-                    <span className="min-w-[150px] px-6 py-4 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
+                    <span className="min-w-[150px] px-6 py-4 border-2 border-orange-500 text-center text-3xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
                       {score}
                     </span>
                   </div>
@@ -903,6 +969,12 @@ export default function GameTaskPage() {
               volume={volume}
               basketHeight={basketHeight}
               selectedFlavors={selectedFlavors}
+              isPaused={isPaused}
+              showTimeUp={showTimeUp}
+              setShowTimeUp={setShowTimeUp}
+              showGameOver={showGameOver}
+              setShowGameOver={setShowGameOver}
+              comboGifs={COMBO_GIFS}
             />
             <AnimatePresence>
               {comboGif && (
@@ -954,7 +1026,7 @@ export default function GameTaskPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="flex flex-col items-center pt-20"
           >
-            <img src={welldone} alt="Well Done" className="w-80 rounded-lg mt-16" />
+            <img src={welldone} alt="Well Done" className="w-64 rounded-lg mt-10" />
             <button
               onClick={handleReplayAll}
               className="absolute bottom-5 left-0 w-full flex justify-center"
@@ -969,96 +1041,156 @@ export default function GameTaskPage() {
         )}
         {activeSection === "leaderboard" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex flex-col items-center max-h-screen py-6">
-              <div ref={leaderboardRef} className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
-                <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
-                <div className="flex justify-center gap-2 mb-6">
-                  <button
-                    className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      leaderboardFilter === "all" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                    }`}
-                    onClick={() => setLeaderboardFilter("all")}
-                  >
-                    All time
-                  </button>
-                  <button
-                    className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      leaderboardFilter === "week" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                    }`}
-                    onClick={() => setLeaderboardFilter("week")}
-                  >
-                    This Week
-                  </button>
-                  <button
-                    className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      leaderboardFilter === "month" ? "bg-yellow-400" : "bg-[#4A2A14] text-white"
-                    }`}
-                    onClick={() => setLeaderboardFilter("month")}
-                  >
-                    This Month
-                  </button>
-                </div>
-                {leaderboard.length > 0 ? (
-                  <>
-                    <div className="flex justify-center items-end gap-4 mb-6 ">
-                      {leaderboard[1] && (
-                        <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
-                            2
-                          </div>
-                          <p className="text-xs text-white mt-1">@{leaderboard[1].player}</p>
-                          <p className="text-yellow-400 font-bold">{leaderboard[1].score}</p>
-                        </div>
-                      )}
-                      {leaderboard[0] && (
-                        <div className="flex flex-col items-center">
-                          <div className="w-24 h-24 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-2xl relative">
-                            👑
-                          </div>
-                          <p className="text-xs text-white mt-1">@{leaderboard[0].player}</p>
-                          <p className="text-yellow-400 font-bold">{leaderboard[0].score}</p>
-                        </div>
-                      )}
-                      {leaderboard[2] && (
-                        <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
-                            3
-                          </div>
-                          <p className="text-xs text-white mt-1">@{leaderboard[2].player}</p>
-                          <p className="text-yellow-400 font-bold">{leaderboard[2].score}</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-3">
-                      {leaderboard.slice(3, 8).map((entry, idx) => (
-                        <div
-                          key={entry.id}
-                          className="flex items-center justify-between bg-[#5A2A12] text-white px-3 py-2 rounded-lg"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
-                              {idx + 4}
-                            </span>
-                            <span>@{entry.player}</span>
-                          </div>
-                          <span className="text-yellow-400 font-bold">{entry.score} pts</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-sm text-slate-300">No scores yet — play to create the first one!</div>
-                )}
+            <div className="flex flex-col items-center max-h-screen py-6 mt-16">
+              <div ref={leaderboardRef} className="p-4 w-[90%] max-w-md text-center shadow-xl relative"  >
+                
+               {leaderboard.length > 0 ? (
+          <>
+            {/* Leaderboard top section (background applied here) */}
+          {/* Leaderboard top section (background applied here) */}
+<div
+  style={{
+    backgroundImage: `url(${leaderbg})`,
+    backgroundSize: "cover", 
+    backgroundPosition: "top center",
+    backgroundRepeat: "no-repeat",
+    width: "100%",
+  }}
+  className="rounded-xl px-4 py-2 sm:px-8 sm:py-8 mb-6 min-h-[300px] flex flex-col items-center"
+>
+  {/* Title + filter buttons */}
+  <h2 className="text-white text-lg sm:text-xl font-bold mb-4 tracking-wide text-center">
+    LEADERBOARD
+  </h2>
+
+  <div className="flex justify-center gap-2 mb-2 bg-[#4A2A14] rounded-full px-2 py-1">
+    <button
+      className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+        leaderboardFilter === "all"
+          ? "bg-yellow-400 text-black"
+          : "bg-[#4A2A14] text-white"
+      }`}
+      onClick={() => setLeaderboardFilter("all")}
+    >
+      All time
+    </button>
+    <button
+      className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+        leaderboardFilter === "week"
+          ? "bg-yellow-400 text-black"
+          : "bg-[#4A2A14] text-white"
+      }`}
+      onClick={() => setLeaderboardFilter("week")}
+    >
+      This Week
+    </button>
+    <button
+      className={`px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+        leaderboardFilter === "month"
+          ? "bg-yellow-400 text-black"
+          : "bg-[#4A2A14] text-white"
+      }`}
+      onClick={() => setLeaderboardFilter("month")}
+    >
+      This Month
+    </button>
+  </div>
+
+  {/* Top 3 podium */}
+  {(leaderboard[0] || leaderboard[1] || leaderboard[2]) && (
+    <div className="flex justify-center items-end gap-4 sm:gap-8 w-full">
+      {/* 2nd place */}
+      {leaderboard[1] && (
+        <div className="flex flex-col items-center translate-y-6 sm:translate-y-8">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-yellow-600 to-yellow-400 border-2 sm:border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+            2
+          </div>
+          <p className="text-[10px] sm:text-xs text-white mt-1">
+            @{leaderboard[1].player}
+          </p>
+          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+            {leaderboard[1].score}
+          </p>
+        </div>
+      )}
+
+      {/* 1st place */}
+      {leaderboard[0] && (
+        <div className="flex flex-col items-center">
+          <span className="text-2xl sm:text-4xl mb-2">👑</span>
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-yellow-500 to-yellow-300 border-2 sm:border-4 border-yellow-200 flex items-center justify-center text-white font-bold text-2xl sm:text-3xl shadow-lg">
+            1
+          </div>
+          <p className="text-[10px] sm:text-xs text-white mt-2">
+            @{leaderboard[0].player}
+          </p>
+          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+            {leaderboard[0].score}
+          </p>
+        </div>
+      )}
+
+      {/* 3rd place */}
+      {leaderboard[2] && (
+        <div className="flex flex-col items-center translate-y-6 sm:translate-y-8">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-orange-600 to-orange-400 border-2 sm:border-4 border-orange-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+            3
+          </div>
+          <p className="text-[10px] sm:text-xs text-white mt-1">
+            @{leaderboard[2].player}
+          </p>
+          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+            {leaderboard[2].score}
+          </p>
+        </div>
+      )}
+    </div>
+  )}
+</div>
+
+
+           <div className="space-y-3 max-h-[40vh] sm:max-h-64 overflow-y-auto pr-2 w-full">
+  {leaderboard.slice(3).map((entry, idx) => (
+    <div
+      key={entry.id}
+      className="flex items-center justify-between text-white px-4 sm:px-6 py-3 sm:py-4 h-14 sm:h-16 rounded-lg"
+      style={{
+        backgroundImage: `url(${longList})`,
+        backgroundSize: "cover", // use cover for wide screens
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        width: "100%",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-yellow-500 flex items-center justify-center text-[10px] sm:text-xs font-bold">
+          {idx + 4}
+        </span>
+        <span className="text-xs sm:text-sm">@{entry.player}</span>
+      </div>
+      <span className="text-yellow-400 font-bold text-xs sm:text-sm">
+        {entry.score} pts
+      </span>
+    </div>
+  ))}
+</div>
+
+          </>
+        ) : (
+          <div className="text-sm text-slate-300">
+            No scores yet — play to create the first one!
+          </div>
+        )}
               </div>
-               <div className="flex flex-rol  absolute bottom-5 left-0 w-full justify-start items-center">
+              <div className="flex flex-row absolute bottom-5 left-0 w-full justify-start items-center">
                 <button
                   onClick={() => setActiveSection(null)}
                   className="text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md"
                 >
-                  <img src={left} alt="Back" className="w-10 " />
+                  <img src={left} alt="Back" className="w-10" />
                 </button>
-                <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md"  onClick={handleShare}>
-                  <img src={share} alt="Share" className="w-52 " />
+                <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md" onClick={handleShare}>
+                  <img src={share} alt="Share" className="w-52" />
                 </button>
               </div>
             </div>

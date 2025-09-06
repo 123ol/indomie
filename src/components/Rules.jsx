@@ -58,7 +58,7 @@ function Rules() {
 
   return (
     <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-4"
+      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] "
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -144,7 +144,7 @@ function Rules() {
                 />
 
                 {/* Buttons overlay at bottom */}
-                <div className="absolute bottom-0 left-2 flex gap-6">
+                <div className="absolute bottom-0 left-2 flex gap-16">
                   {/* Back */}
                   <motion.button
                     onClick={handleBack}
