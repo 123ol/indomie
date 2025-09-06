@@ -827,7 +827,7 @@ export default function GameTaskPage() {
               whileHover={{ scale: 1.05 }}
             >
               <p className="text-3xl font-bold text-yellow-400 leading-none font-malvie w-[100%]">
-                PICK YOUR FLAVOR FOR <br /> TASK {currentTask}
+                WHICH FLAVOR ARE <br/> YOU HAVE NEXT
               </p>
             </motion.div>
             <div className="flex justify-center items-center space-x-4 md:space-x-6 lg:space-x-8 mb-20">

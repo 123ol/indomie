@@ -130,10 +130,10 @@ function Game() {
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
           whileHover={{ scale: 1.05 }}
         >
-          <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie">
+          <p className="text-3xl font-bold text-yellow-400 leading-snug font-malvie">
             CATCH YOUR <br /> INDOMIE FLAVORS
           </p>
-          <p className="text-white text-2xl md:text-3xl lg:text-4xl leading-snug font-malvie">
+          <p className="text-white text-3xl leading-snug font-malvie">
             AND BECOME THIS <br/> WEEK'S HOH
           </p>
         </motion.div>
