@@ -1,7 +1,7 @@
 import NaYouGetAm from "../assets/Na you get am.gif";
 import Flavour from "../assets/Flavour.gif";
 import SpiceHit from "../assets/Spice hit.gif";
-import HurraySound from "../assets/sounds/HURRAY SOUND.mp3";
+// import HurraySound from "../assets/sounds/HURRAY SOUND.mp3";
 import ComboSound from "../assets/sounds/COMBO SOUND.mp3";
 
 export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -22,7 +22,6 @@ export const COMBO_GIFS = [
 ];
 
 export const COMBO_SOUNDS = [
-  ComboSound,
   ComboSound,
 ];
 

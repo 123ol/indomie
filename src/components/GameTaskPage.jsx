@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { collection, doc, setDoc, query, orderBy, limit, getDocs, where, onSnapshot, getDoc } from "firebase/firestore";
+import html2canvas from "html2canvas"; // Added for image generation
 import Game from "./BordGame";
 import { debounce, COMBO_GIFS, COMBO_SOUNDS, SOUND_CATCH, SOUND_OBSTACLE, GAME_DURATION_SEC } from "./utils";
 import { Scorereveal, backgroundImage, replay } from "./assets";
@@ -17,8 +18,9 @@ import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
 import task1 from "../assets/Task 1b.png";
 import task2 from "../assets/Task 2 b.png";
-import playAgin from "../assets/Play Again.png"
+import playAgin from "../assets/Play Again.png";
 import task3 from "../assets/Task 3 b.png";
+import Transition from "../assets/Elevator door.gif";
 
 // Flavor definitions
 const allFlavors = [
@@ -68,8 +70,10 @@ export default function GameTaskPage() {
       return [null, null, null];
     }
   });
-
   const [showFlavorSelection, setShowFlavorSelection] = useState(false);
+  const [showTransition, setShowTransition] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false); // New state for share modal
+  const leaderboardRef = useRef(null); // Ref for capturing leaderboard
 
   // Task image mapping
   const taskImages = {
@@ -106,7 +110,7 @@ export default function GameTaskPage() {
     visible: { opacity: 1, scale: 1.1, transition: { duration: 0.3, ease: "easeOut" } },
   };
 
- // Clear local storage on page refresh
+  // Clear local storage on page refresh
   useEffect(() => {
     const handleBeforeUnload = () => {
       try {
@@ -194,19 +198,23 @@ export default function GameTaskPage() {
         setCurrentTask(taskNumber);
         return;
       }
-      const previousSum = getPreviousSum(taskNumber);
-      console.log(`Starting Task ${taskNumber} with score: ${previousSum}`);
-      setCurrentTask(taskNumber);
-      setScore(previousSum);
-      setShowLeaderboard(false);
-      setShowEndTask(false);
-      setActiveSection(null);
-      setGameActive(true);
-      setGameOver(false);
-      setLives(3);
-      setTimeLeft(GAME_DURATION_SEC);
-      setComboGif(null);
-      console.log(`Game started: gameActive=true, task=${taskNumber}`);
+      setShowTransition(true);
+      setTimeout(() => {
+        setShowTransition(false);
+        const previousSum = getPreviousSum(taskNumber);
+        console.log(`Starting Task ${taskNumber} with score: ${previousSum}`);
+        setCurrentTask(taskNumber);
+        setScore(previousSum);
+        setShowLeaderboard(false);
+        setShowEndTask(false);
+        setActiveSection(null);
+        setGameActive(true);
+        setGameOver(false);
+        setLives(3);
+        setTimeLeft(GAME_DURATION_SEC);
+        setComboGif(null);
+        console.log(`Game started: gameActive=true, task=${taskNumber}`);
+      }, 3000);
     },
     [isReady, getPreviousSum, selectedFlavors]
   );
@@ -230,7 +238,7 @@ export default function GameTaskPage() {
         setShowFlavorSelection(false);
         setGameOver(false);
         setActiveSection(null);
-        startGame(currentTask, flavorName); // Pass flavor directly
+        startGame(currentTask, flavorName);
         return newFlavors;
       });
     },
@@ -408,6 +416,79 @@ export default function GameTaskPage() {
     [currentUser, fetchLeaderboardFromServer, navigate]
   );
 
+  // New function to get user's rank
+  const getUserRank = useCallback(() => {
+    if (!currentUser || !leaderboard.length) return null;
+    const userEntry = leaderboard.find((entry) => entry.uid === currentUser.uid);
+    if (!userEntry) return null;
+    const rank = leaderboard.findIndex((entry) => entry.uid === currentUser.uid) + 1;
+    return { rank, score: userEntry.score };
+  }, [currentUser, leaderboard]);
+
+  // New function to handle sharing
+  const handleShare = useCallback(async () => {
+    if (!currentUser) {
+      setNotification({ type: "error", message: "Please log in to share your rank." });
+      navigate("/form");
+      return;
+    }
+
+    const userRank = getUserRank();
+    if (!userRank) {
+      setNotification({ type: "error", message: "No leaderboard rank found. Play the game to get a rank!" });
+      return;
+    }
+
+    setShowShareModal(true);
+  }, [currentUser, getUserRank, navigate]);
+
+  // New function to share to Twitter/X
+  const shareToTwitter = useCallback(() => {
+    const userRank = getUserRank();
+    if (!userRank) return;
+
+    const text = `I ranked #${userRank.rank} with a score of ${userRank.score} on the Indomie HOH game! 🏆 Try to beat me!`;
+    const url = encodeURIComponent(window.location.origin);
+    const hashtags = "IndomieHOH,GameChallenge";
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}&hashtags=${hashtags}`;
+    
+    window.open(twitterUrl, "_blank");
+    setShowShareModal(false);
+  }, [getUserRank]);
+
+  // New function to share to Instagram
+  const shareToInstagram = useCallback(async () => {
+    if (!leaderboardRef.current) {
+      setNotification({ type: "error", message: "Leaderboard not available for sharing." });
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(leaderboardRef.current, {
+        backgroundColor: null,
+        scale: 2,
+      });
+      const imgData = canvas.toDataURL("image/png");
+
+      // Create a temporary link to download the image
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = `IndomieHOH_Leaderboard_${currentUser?.displayName || "Player"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setNotification({
+        type: "success",
+        message: "Leaderboard image downloaded! Upload it to Instagram manually.",
+      });
+      setShowShareModal(false);
+    } catch (err) {
+      console.error("Failed to generate leaderboard image:", err);
+      setNotification({ type: "error", message: "Failed to generate leaderboard image." });
+    }
+  }, [currentUser]);
+
   const handleGameEnd = useCallback(() => {
     console.log(`Game ended for Task ${currentTask}, current score: ${score}`);
     setGameActive(false);
@@ -501,7 +582,7 @@ export default function GameTaskPage() {
     };
     setAudioVolume();
 
-    const preloadImages = [...COMBO_GIFS, ...allFlavors.map((f) => f.img), task1, task2, task3].map(
+    const preloadImages = [...COMBO_GIFS, ...allFlavors.map((f) => f.img), task1, task2, task3, Transition].map(
       (src) =>
         new Promise((resolve) => {
           const img = new Image();
@@ -563,8 +644,8 @@ export default function GameTaskPage() {
 
   // Log rendering state
   useEffect(() => {
-    console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}`);
-  }, [gameActive, showFlavorSelection, currentTask, activeSection, gameOver]);
+    console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, showTransition=${showTransition}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}, showShareModal=${showShareModal}`);
+  }, [gameActive, showFlavorSelection, showTransition, currentTask, activeSection, gameOver, showShareModal]);
 
   return (
     <div
@@ -577,6 +658,63 @@ export default function GameTaskPage() {
         width: "100%",
       }}
     >
+      <AnimatePresence>
+        {showTransition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black"
+          >
+            <motion.img
+              src={Transition}
+              alt="Task Transition"
+              className="w-full h-full object-cover"
+              initial={{ scale: 1.2, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showShareModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          >
+            <div className="bg-[#6B3E1D] p-6 rounded-lg shadow-lg text-white">
+              <h3 className="text-xl font-bold mb-4">Share Your Rank</h3>
+              <p className="mb-4">Choose a platform to share your leaderboard rank:</p>
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={shareToTwitter}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Twitter/X
+                </button>
+                <button
+                  onClick={shareToInstagram}
+                  className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600"
+                >
+                  Instagram
+                </button>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {assetError && (
         <div className="absolute top-4 left-4 bg-red-500 text-white p-2 rounded">
           {assetError}
@@ -789,14 +927,14 @@ export default function GameTaskPage() {
               <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
                 Final Score
               </span>
-               <span className="min-w-[200px] px-6 py-2 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
+              <span className="min-w-[200px] px-6 py-2 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
                 {score}
               </span>
             </div>
             <img src={Scorereveal} alt="End Game" className="w-auto absolute bottom-5" />
-             <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
+            <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
               <button onClick={() => setActiveSection("endTask")}>
-                <img src={EndTask} alt="End Task"     className="w-56 h-full object-cover" />
+                <img src={EndTask} alt="End Task" className="w-56 h-full object-cover" />
               </button>
               <button
                 onClick={() => {
@@ -804,9 +942,8 @@ export default function GameTaskPage() {
                   fetchLeaderboardFromServer();
                   setActiveSection("leaderboard");
                 }}
-                
               >
-                <img src={leaderboard1} alt="Leaderboard"     className="w-56 h-full object-cover" />
+                <img src={leaderboard1} alt="Leaderboard" className="w-56 h-full object-cover" />
               </button>
             </div>
           </div>
@@ -819,22 +956,21 @@ export default function GameTaskPage() {
           >
             <img src={welldone} alt="Well Done" className="w-80 rounded-lg mt-16" />
             <button
-                   onClick={handleReplayAll}
-                      className='absolute bottom-5 left-0 w-full flex justify-center'
-                    
-                    >
-                      <img
-                        src={playAgin}
-                        alt=''
-                        className="w-56 h-full object-cover"
-                      />
-                    </button>
+              onClick={handleReplayAll}
+              className="absolute bottom-5 left-0 w-full flex justify-center"
+            >
+              <img
+                src={playAgin}
+                alt=""
+                className="w-56 h-full object-cover"
+              />
+            </button>
           </motion.div>
         )}
         {activeSection === "leaderboard" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex flex-col items-center min-h-screen py-6">
-              <div className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
+              <div ref={leaderboardRef} className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
                 <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
                 <div className="flex justify-center gap-2 mb-6">
                   <button
@@ -914,15 +1050,15 @@ export default function GameTaskPage() {
                   <div className="text-sm text-slate-300">No scores yet — play to create the first one!</div>
                 )}
               </div>
-              <div className="mt-6 flex gap-4">
+               <div className="flex flex-rol  absolute bottom-5 left-0 w-full justify-start items-center">
                 <button
                   onClick={() => setActiveSection(null)}
                   className="text-white font-bold text-lg px-8 py-3 rounded-xl shadow-md"
                 >
-                  <img src={left} alt="Back" className="w-16 rounded-lg mt-4" />
+                  <img src={left} alt="Back" className="w-10 " />
                 </button>
-                <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md">
-                  <img src={share} alt="Share" className="w-40 rounded-lg mt-4" />
+                <button className="text-yellow-400 font-bold text-lg px-8 py-3 rounded-xl shadow-md"  onClick={handleShare}>
+                  <img src={share} alt="Share" className="w-52 " />
                 </button>
               </div>
             </div>
