@@ -827,7 +827,7 @@ export default function GameTaskPage() {
               whileHover={{ scale: 1.05 }}
             >
               <p className="text-3xl font-bold text-yellow-400 leading-none font-malvie w-[100%]">
-                WHICH FLAVOR ARE <br/> YOU HAVE NEXT
+                WHICH FLAVOR ARE <br/> YOU HAVING NEXT
               </p>
             </motion.div>
             <div className="flex justify-center items-center space-x-4 md:space-x-6 lg:space-x-8 mb-20">
