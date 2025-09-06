@@ -969,7 +969,7 @@ export default function GameTaskPage() {
         )}
         {activeSection === "leaderboard" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="flex flex-col items-center min-h-screen py-6">
+            <div className="flex flex-col items-center max-h-screen py-6">
               <div ref={leaderboardRef} className="bg-[#6B3E1D] rounded-2xl p-4 w-[90%] max-w-md text-center shadow-xl relative">
                 <h2 className="text-white text-xl font-bold mb-4 tracking-wide">LEADERBOARD</h2>
                 <div className="flex justify-center gap-2 mb-6">
@@ -1000,7 +1000,7 @@ export default function GameTaskPage() {
                 </div>
                 {leaderboard.length > 0 ? (
                   <>
-                    <div className="flex justify-center items-end gap-4 mb-6">
+                    <div className="flex justify-center items-end gap-4 mb-6 ">
                       {leaderboard[1] && (
                         <div className="flex flex-col items-center">
                           <div className="w-16 h-16 rounded-full bg-yellow-500 border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg">
