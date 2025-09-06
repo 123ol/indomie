@@ -826,7 +826,7 @@ export default function GameTaskPage() {
               transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
               whileHover={{ scale: 1.05 }}
             >
-              <p className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie w-[100%]">
+              <p className="text-3xl font-bold text-yellow-400 leading-none font-malvie w-[100%]">
                 PICK YOUR FLAVOR FOR <br /> TASK {currentTask}
               </p>
             </motion.div>
@@ -905,10 +905,10 @@ export default function GameTaskPage() {
               <div className="flex flex-col items-center">
                 <div className="flex space-x-4 mb-4">
                   <div className="flex flex-col items-center">
-                    <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
+                    <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
                       Score
                     </span>
-                    <span className="min-w-[150px] px-6 py-4 border-2 border-orange-500 text-center text-3xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
+                    <span className="min-w-[150px] px-6 py-4 border-2 border-orange-500 text-center text-4xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
                       {score}
                     </span>
                   </div>
@@ -996,10 +996,10 @@ export default function GameTaskPage() {
         {currentTask > 3 && !activeSection && (
           <div className="flex flex-col items-center pt-20">
             <div className="flex flex-col items-center mb-4">
-              <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-xl font-extrabold rounded-lg text-white">
+              <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
                 Final Score
               </span>
-              <span className="min-w-[200px] px-6 py-2 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
+              <span className="min-w-[200px] px-6 py-2 border-2 border-orange-500 text-center text-4xl font-extrabold rounded-lg text-white">
                 {score}
               </span>
             </div>
