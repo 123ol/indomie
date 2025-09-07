@@ -864,12 +864,12 @@ export default function GameTaskPage() {
                 onClick={() => handleFlavorSelect(getAvailableFlavors()[0].name)}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="p-0 rounded-2xl overflow-hidden"
+                className="absolute bottom-5 left-0 w-full flex justify-center overflow-hidden"
               >
                 <motion.img
                   src={taskImages[currentTask]}
                   alt={`Start Task ${currentTask}`}
-                  className="w-48 h-full object-cover"
+                  className="w-56 h-full object-cover"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
                 />
