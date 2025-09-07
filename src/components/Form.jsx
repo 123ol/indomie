@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import backgroundImage from "../assets/Other stage background.png";
+import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
 import Transition from "../assets/Na you get am.gif";

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import backgroundImage from "../assets/Other stage background.png";
+import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
 import Crayfish from "../assets/Crayfish 2.png";

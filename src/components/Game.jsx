@@ -7,7 +7,7 @@ import playButton from "../assets/Play now.png";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import backgroundImage from "../assets/Intro Background.png";
+import backgroundImage from "../assets/Intro Background.webp";
 import TopDice from "../assets/Dicetop.png";
 import BottomDice from "../assets/Dicebottom.png";
 import Transition from "../assets/Elevator door.gif";

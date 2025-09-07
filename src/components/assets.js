@@ -1,5 +1,5 @@
 import Scorereveal from "../assets/Score reveal.png";
-import backgroundImage from "../assets/Other stage background.png";
+import backgroundImage from "../assets/Other stage background.webp";
 import replay from "../assets/Replay.png";
 import task from "../assets/Next task button.png";
 import mangoImg from "../assets/Layer 3 copy 5.png";

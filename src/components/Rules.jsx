@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import backgroundImage from "../assets/Other stage background.png";
+import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
-import gameRule1 from "../assets/Game rukle.png";
-import gameRule2 from "../assets/Game rule 2.png";
+import gameRule1 from "../assets/Game rukle.webp";
+import gameRule2 from "../assets/Game rule 2.webp";
 import ContinueButton from "../assets/Continue.png";
 import Right from "../assets/Right Button.png";
 import Left from "../assets/Left Button.png";
