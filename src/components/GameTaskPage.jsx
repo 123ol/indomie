@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence,useAnimation } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 import { collection, doc, setDoc, query, orderBy, limit, getDocs, where, onSnapshot, getDoc } from "firebase/firestore";
@@ -24,7 +24,8 @@ import leaderbg from "../assets/Asset 4-8.png";
 import longList from "../assets/Asset 5-8.png";
 import shear from "../assets/Asset 9-8.png";
 import { FaWhatsapp, FaFacebook, FaXTwitter } from "react-icons/fa6";
-
+import TopDice from "../assets/Dicetop.png";
+import BottomDice from "../assets/Dicebottom.png";
 // Flavor definitions
 const allFlavors = [
   { img: Crayfish, name: "Crayfish" },
@@ -57,6 +58,8 @@ export default function GameTaskPage() {
   const [showTimeUp, setShowTimeUp] = useState(false);
   const [showGameOver, setShowGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+   const diceControlsTop = useAnimation(); // Top dice
+  const diceControlsBottom = useAnimation(); // Bottom dice
   const [selectedFlavors, setSelectedFlavors] = useState(() => {
     try {
       const saved = localStorage.getItem("taskFlavors");
@@ -680,6 +683,62 @@ export default function GameTaskPage() {
     };
   }, [volume]);
 
+   // Animate dice with smooth bouncing motion
+  useEffect(() => {
+    const animateDice = async () => {
+      // Initial entrance animation for dice
+      await Promise.all([
+        diceControlsTop.start({
+          y: 0,
+          x: window.innerWidth < 768 ? 10 : 20,
+          opacity: 1,
+          scale: 1,
+          transition: { duration: 1, ease: "easeOut", bounce: 0.4, delay: 0.9 },
+        }),
+        diceControlsBottom.start({
+          y: 0,
+          x: window.innerWidth < 768 ? -10 : -20,
+          opacity: 1,
+          scale: 1,
+          transition: { duration: 1, ease: "easeOut", bounce: 0.4, delay: 1.0 },
+        }),
+      ]);
+
+      // Continuous bouncing animation for dice
+      diceControlsTop.start({
+        y: [0, -10],
+        rotate: [-2, 2],
+        x: window.innerWidth < 768 ? 10 : 20,
+        transition: {
+          y: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          rotate: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          x: { duration: 0 },
+        },
+      });
+      diceControlsBottom.start({
+        y: [0, -10],
+        rotate: [2, -2],
+        x: window.innerWidth < 768 ? -10 : -20,
+        transition: {
+          y: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          rotate: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          x: { duration: 0 },
+        },
+      });
+    };
+
+    animateDice();
+
+    // Update dice positions on window resize
+    const handleResize = () => {
+      diceControlsTop.start({ x: window.innerWidth < 768 ? 10 : 20, transition: { duration: 0 } });
+      diceControlsBottom.start({ x: window.innerWidth < 768 ? -10 : -20, transition: { duration: 0 } });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [diceControlsTop, diceControlsBottom]);
+
   // Log rendering state
   useEffect(() => {
     console.log(`Rendering: gameActive=${gameActive}, showFlavorSelection=${showFlavorSelection}, showTransition=${showTransition}, currentTask=${currentTask}, activeSection=${activeSection}, gameOver=${gameOver}, showShareModal=${showShareModal}, showTimeUp=${showTimeUp}, showGameOver=${showGameOver}, isPaused=${isPaused}`);
@@ -880,11 +939,36 @@ export default function GameTaskPage() {
           <div className="flex flex-col items-center pt-16">
             {currentTask === 1 && !gameOver ? (
               <>
+               {/* Top Dice (below logo) */}
+      <motion.div
+        className="absolute top-[10rem] left-4 md:left-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsTop}
+      >
+        <img
+          src={TopDice}
+          alt="Top Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
+      {/* Bottom Dice (bottom-right) */}
+      <motion.div
+        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsBottom}
+      >
+        <img
+          src={BottomDice}
+          alt="Bottom Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
                 <p className="text-3xl font-bold text-yellow-400 font-malvie text-center leading-none">
                   READY TO <br /> BECOME HOH?
                 </p>
                 <p className="text-white text-3xl font-bold font-malvie leading-none">
-                  ENTER ARENA
+                  ENTER ARENA 
                 </p>
                 <img src={Scorereveal} alt="Start Game" className="w-auto absolute bottom-5" />
                 <button
@@ -903,8 +987,36 @@ export default function GameTaskPage() {
               </>
             ) : (
               <div className="flex flex-col items-center">
+
+
+                  <motion.div
+        className="absolute top-[10rem] left-4 md:left-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsTop}
+      >
+        <img
+          src={TopDice}
+          alt="Top Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
+      {/* Bottom Dice (bottom-right) */}
+      <motion.div
+        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsBottom}
+      >
+        <img
+          src={BottomDice}
+          alt="Bottom Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
                 <div className="flex space-x-4 mb-4">
                   <div className="flex flex-col items-center">
+                    
                     <span className="w-28 px-2 py-1 border-2 border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white shadow-lg shadow-orange-500/100">
                       Score
                     </span>
@@ -912,6 +1024,30 @@ export default function GameTaskPage() {
                       {score}
                     </span>
                   </div>
+                  <motion.div
+        className="absolute top-[10rem] left-4 md:left-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsTop}
+      >
+        <img
+          src={TopDice}
+          alt="Top Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
+      {/* Bottom Dice (bottom-right) */}
+      <motion.div
+        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsBottom}
+      >
+        <img
+          src={BottomDice}
+          alt="Bottom Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
                 </div>
                 <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="absolute bottom-5" />
                 <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
@@ -995,6 +1131,31 @@ export default function GameTaskPage() {
         )}
         {currentTask > 3 && !activeSection && (
           <div className="flex flex-col items-center pt-20">
+              <motion.div
+        className="absolute top-[10rem] left-4 md:left-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsTop}
+      >
+        <img
+          src={TopDice}
+          alt="Top Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
+      {/* Bottom Dice (bottom-right) */}
+      <motion.div
+        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsBottom}
+      >
+        <img
+          src={BottomDice}
+          alt="Bottom Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
             <div className="flex flex-col items-center mb-4">
               <span className="w-[150px] px-2 py-1 border border-orange-500 text-center text-2xl font-extrabold rounded-lg text-white">
                 Final Score
