@@ -18,7 +18,7 @@ import carrot from "../assets/carot.png";
 
 // Unified mapping of flavors to their images for apple and mango
 const flavorImageMap = {
-  Crayfish: { apple: Crayfish, mango: crayfish },
+  Crayfish: { apple: Crayfish, mango: crayfish  },
   Peppersoup: { apple: Peppersoup, mango: pepper },
   Oriental: { apple: OrientalNoodle, mango: carrot },
 };
@@ -48,7 +48,7 @@ export const getImages = (taskNumber, selectedFlavors) => {
   return {
     apple: Object.assign(new Image(), { src: images.apple }),
     mango: Object.assign(new Image(), { src: images.mango }), // Always matches the selected flavor
-    nut: Object.assign(new Image(), { src: nutImg }),
+    // nut: Object.assign(new Image(), { src: nutImg }),
     bomb: Object.assign(new Image(), { src: bombImg }),
     bomb2: Object.assign(new Image(), { src: bombImg2 }),
     bomb3: Object.assign(new Image(), { src: bombImg3 }),
