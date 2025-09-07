@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import backgroundImage from "../assets/Other stage background.png";
 import indomieLogo from "../assets/Large Indomie log.png";
 import gameRule1 from "../assets/Game rule 1.png";
@@ -8,12 +8,16 @@ import gameRule2 from "../assets/Game rule 2.png";
 import ContinueButton from "../assets/Continue.png";
 import Right from "../assets/Right Button.png";
 import Left from "../assets/Left Button.png";
+import TopDice from "../assets/Dicetop.png";
+import BottomDice from "../assets/Dicebottom.png";
 
 function Rules() {
   const navigate = useNavigate();
   const [showWave, setShowWave] = useState(false);
   const [currentSection, setCurrentSection] = useState(1);
   const [direction, setDirection] = useState(0);
+  const diceControlsTop = useAnimation(); // Top dice
+  const diceControlsBottom = useAnimation(); // Bottom dice
 
   const handleContinue = () => {
     setShowWave(true);
@@ -31,6 +35,62 @@ function Rules() {
     setDirection(-1);
     setCurrentSection(1);
   };
+
+  // Animate dice with smooth bouncing motion
+  useEffect(() => {
+    const animateDice = async () => {
+      // Initial entrance animation for dice
+      await Promise.all([
+        diceControlsTop.start({
+          y: 0,
+          x: window.innerWidth < 768 ? 10 : 20,
+          opacity: 1,
+          scale: 1,
+          transition: { duration: 1, ease: "easeOut", bounce: 0.4, delay: 0.9 },
+        }),
+        diceControlsBottom.start({
+          y: 0,
+          x: window.innerWidth < 768 ? -10 : -20,
+          opacity: 1,
+          scale: 1,
+          transition: { duration: 1, ease: "easeOut", bounce: 0.4, delay: 1.0 },
+        }),
+      ]);
+
+      // Continuous bouncing animation for dice
+      diceControlsTop.start({
+        y: [0, -10],
+        rotate: [-2, 2],
+        x: window.innerWidth < 768 ? 10 : 20,
+        transition: {
+          y: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          rotate: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          x: { duration: 0 },
+        },
+      });
+      diceControlsBottom.start({
+        y: [0, -10],
+        rotate: [2, -2],
+        x: window.innerWidth < 768 ? -10 : -20,
+        transition: {
+          y: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          rotate: { duration: 1.5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" },
+          x: { duration: 0 },
+        },
+      });
+    };
+
+    animateDice();
+
+    // Update dice positions on window resize
+    const handleResize = () => {
+      diceControlsTop.start({ x: window.innerWidth < 768 ? 10 : 20, transition: { duration: 0 } });
+      diceControlsBottom.start({ x: window.innerWidth < 768 ? -10 : -20, transition: { duration: 0 } });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [diceControlsTop, diceControlsBottom]);
 
   const sectionVariants = {
     enter: (dir) => ({
@@ -58,7 +118,7 @@ function Rules() {
 
   return (
     <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] "
+      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] relative"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
@@ -81,8 +141,34 @@ function Rules() {
         />
       </motion.div>
 
+      {/* Top Dice (below logo) */}
+      <motion.div
+        className="absolute top-[10rem] left-4 md:left-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsTop}
+      >
+        <img
+          src={TopDice}
+          alt="Top Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
+      {/* Bottom Dice (bottom-right) */}
+      <motion.div
+        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
+        initial={{ y: 20, opacity: 0, scale: 0.8 }}
+        animate={diceControlsBottom}
+      >
+        <img
+          src={BottomDice}
+          alt="Bottom Dice"
+          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
+        />
+      </motion.div>
+
       {/* Content */}
-      <div className="flex flex-col items-center justify-center flex-grow ">
+      <div className="flex flex-col items-center justify-center flex-grow">
         <AnimatePresence mode="wait" custom={direction}>
           {currentSection === 1 && (
             <motion.div
@@ -96,11 +182,11 @@ function Rules() {
             >
               {/* Image wrapper (relative for buttons) */}
               <div className="relative">
-               <motion.img
-  src={gameRule1}
-  alt="Game Rule 1"
-  className="h-[75vh] w-full object-fill"
-/>
+                <motion.img
+                  src={gameRule1}
+                  alt="Game Rule 1"
+                  className="h-[75vh] w-full object-fill"
+                />
 
                 {/* Next Button OVERLAY on bottom of image */}
                 <motion.button
@@ -140,7 +226,7 @@ function Rules() {
                 <motion.img
                   src={gameRule2}
                   alt="Game Rule 2"
-                   className="h-[75vh] w-full object-fill"
+                  className="h-[75vh] w-full object-fill"
                 />
 
                 {/* Buttons overlay at bottom */}
@@ -170,12 +256,12 @@ function Rules() {
                       onClick={handleContinue}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                       className="pt-4"
+                      className="pt-4"
                     >
                       <motion.img
                         src={ContinueButton}
                         alt="Continue Button"
-                        className="w-52 object-fill "
+                        className="w-52 object-fill"
                         animate={{ scale: [1, 1.05, 1] }}
                         transition={{
                           duration: 1.5,
