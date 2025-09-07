@@ -206,9 +206,7 @@ function BordGame({
         h: 150 * scale,
         speed: 7 * scale,
       },
-     entity: { minX: 20 * scale, r: 35 * scale, startY: 20 * scale },
-
-
+      entity: { minX: 20 * scale, r: 35 * scale, startY: 20 * scale },
       lineWidth: 4 * scale,
     }),
     [scale, basketHeight]
@@ -228,7 +226,7 @@ function BordGame({
   const keysRef = useRef({});
 
   // Dynamic fall speed
-  const baseFallSpeed = useMemo(() => clamp(2.2 + (currentTask - 1) * 0.35, 2.2, 6.0), [currentTask]);
+  const baseFallSpeed = useMemo(() => clamp(3.0 + (currentTask - 1) * 0.5, 3.0, 8.0), [currentTask]);
 
   // Pointer/touch controls
   const handlePointerMove = useCallback(
@@ -294,54 +292,51 @@ function BordGame({
   }, [canvasW, isPaused]);
 
   // Spawn fruits & obstacles
- // Spawn fruits & obstacles
-useEffect(() => {
-  runningRef.current = true;
-  const bombProbability = currentTask === 1 ? 0.4 : currentTask === 2 ? 0.5 : 0.6;
+  useEffect(() => {
+    runningRef.current = true;
+    const bombProbability = currentTask === 1 ? 0.2 : currentTask === 2 ? 0.3 : 0.4;
 
- const spawn = () => {
-  if (!runningRef.current || isPaused) return;
+    const spawn = () => {
+      if (!runningRef.current || isPaused) return;
 
-  // 🎲 Randomly decide how many items to spawn (1–3)
-  const count = rand(1, 3);  
+      // 🎲 Randomly decide how many items to spawn (1–3)
+      const count = rand(1, 3);  
 
-  for (let i = 0; i < count; i++) {
-    const isObstacle = Math.random() < bombProbability;
-    const x = rand(scaled.entity.minX, canvasW - scaled.entity.minX);
-    const vy = (baseFallSpeed + rand(0, 1.8)) * scale;
+      for (let i = 0; i < count; i++) {
+        const isObstacle = Math.random() < bombProbability;
+        const x = rand(scaled.entity.minX, canvasW - scaled.entity.minX);
+        const vy = (baseFallSpeed + rand(0, 2.0)) * scale;
 
-    if (isObstacle) {
-      const bombType = BOMBS[Math.floor(Math.random() * BOMBS.length)];
-      obstaclesRef.current.push({
-        x,
-        y: -scaled.entity.startY,
-        vy,
-        r: scaled.entity.r,
-        type: bombType,
-      });
-      console.log(`Spawned bomb (${bombType}) at x: ${x}, Task: ${currentTask}`);
-    } else {
-      const type = FRUITS[Math.floor(Math.random() * FRUITS.length)];
-      fruitsRef.current.push({
-        x,
-        y: -scaled.entity.startY,
-        vy,
-        r: scaled.entity.r,
-        type,
-      });
-      console.log(`Spawned fruit (${type}) at x: ${x}, Task: ${currentTask}`);
-    }
-  }
-};
+        if (isObstacle) {
+          const bombType = BOMBS[Math.floor(Math.random() * BOMBS.length)];
+          obstaclesRef.current.push({
+            x,
+            y: -scaled.entity.startY,
+            vy,
+            r: scaled.entity.r,
+            type: bombType,
+          });
+          console.log(`Spawned bomb (${bombType}) at x: ${x}, vy: ${vy}, Task: ${currentTask}`);
+        } else {
+          const type = FRUITS[Math.floor(Math.random() * FRUITS.length)];
+          fruitsRef.current.push({
+            x,
+            y: -scaled.entity.startY,
+            vy,
+            r: scaled.entity.r,
+            type,
+          });
+          console.log(`Spawned fruit (${type}) at x: ${x}, vy: ${vy}, Task: ${currentTask}`);
+        }
+      }
+    };
 
-
-  spawnIntervalRef.current = setInterval(spawn, SPAWN_INTERVAL_MS);
-  return () => {
-    clearInterval(spawnIntervalRef.current);
-    runningRef.current = false;
-  };
-}, [baseFallSpeed, canvasW, scale, currentTask, isPaused]);
-
+    spawnIntervalRef.current = setInterval(spawn, SPAWN_INTERVAL_MS);
+    return () => {
+      clearInterval(spawnIntervalRef.current);
+      runningRef.current = false;
+    };
+  }, [baseFallSpeed, canvasW, scale, currentTask, isPaused]);
 
   // Timer countdown
   useEffect(() => {
@@ -380,10 +375,12 @@ useEffect(() => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    ctx.scale(scale, scale);
+    // Set high-quality image rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     const drawBackground = () => {
-      if (backgroundImg.complete) {
+      if (backgroundImg.complete && backgroundImg.naturalWidth > 0) {
         ctx.drawImage(backgroundImg, 0, 0, canvasW / scale, canvasH / scale);
       } else {
         ctx.fillStyle = "#000000";
@@ -392,14 +389,11 @@ useEffect(() => {
     };
 
     const drawBasket = (basket) => {
-      if (gameImages.basket.complete) {
+      const img = gameImages.basket;
+      if (img?.complete && img.naturalWidth > 0) {
         ctx.save();
-        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-        ctx.shadowBlur = 5 * scale;
-        ctx.shadowOffsetX = 2 * scale;
-        ctx.shadowOffsetY = 2 * scale;
         ctx.drawImage(
-          gameImages.basket,
+          img,
           basket.x / scale,
           basket.y / scale,
           basket.w / scale,
@@ -411,12 +405,8 @@ useEffect(() => {
 
     const drawFruit = (fruit) => {
       const img = gameImages[fruit.type];
-      if (img?.complete) {
+      if (img?.complete && img.naturalWidth > 0) {
         ctx.save();
-        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-        ctx.shadowBlur = 5 * scale;
-        ctx.shadowOffsetX = 2 * scale;
-        ctx.shadowOffsetY = 2 * scale;
         ctx.drawImage(
           img,
           (fruit.x - fruit.r) / scale,
@@ -430,12 +420,8 @@ useEffect(() => {
 
     const drawObstacle = (obstacle) => {
       const img = gameImages[obstacle.type];
-      if (img?.complete) {
+      if (img?.complete && img.naturalWidth > 0) {
         ctx.save();
-        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-        ctx.shadowBlur = 5 * scale;
-        ctx.shadowOffsetX = 2 * scale;
-        ctx.shadowOffsetY = 2 * scale;
         ctx.drawImage(
           img,
           (obstacle.x - obstacle.r) / scale,
@@ -456,20 +442,21 @@ useEffect(() => {
         ? gameOverImageRef.current
         : comboImageRef.current;
       const imgKey = showTimeUp ? "timeUp" : showGameOver ? "gameOver" : "combo";
-      const imgWidth = (canvasW / 3) / scale; // Approx 266px at BASE_CANVAS_W=800
-      const imgHeight = imgWidth; // Square aspect ratio
-      const x = (canvasW / 2 - imgWidth / 2) / scale;
-      const y = (canvasH / 2 - imgHeight / 2) / scale;
+      const baseWidth = canvasW / 3; // Approx 266px at BASE_CANVAS_W=800
+      const baseHeight = baseWidth; // Square aspect ratio
+      const imgWidth = baseWidth * bounceScale / scale;
+      const imgHeight = baseHeight * bounceScale / scale;
+      const x = (canvasW / 2 - baseWidth / 2) / scale;
+      const y = (canvasH / 2 - baseHeight / 2) / scale;
 
       ctx.save();
-      ctx.translate(canvasW / 2 / scale, canvasH / 2 / scale);
-      ctx.scale(bounceScale, bounceScale);
-      ctx.translate(-canvasW / 2 / scale, -canvasH / 2 / scale);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset all transformations
+      ctx.scale(scale, scale); // Reapply canvas scale
 
       if (img && img.complete && img.naturalWidth > 0 && gifLoadStatus[imgKey]) {
         try {
           ctx.drawImage(img, x, y, imgWidth, imgHeight);
-          console.log(`Drawing ${imgKey} GIF at (${x}, ${y}), size: ${imgWidth}x${imgHeight}, scale: ${bounceScale}`);
+          console.log(`Drawing ${imgKey} GIF at (${x}, ${y}), size: ${imgWidth}x${imgHeight}, bounceScale: ${bounceScale}`);
         } catch (err) {
           console.error(`Failed to draw ${imgKey} GIF:`, err);
         }
@@ -477,10 +464,11 @@ useEffect(() => {
         ctx.fillStyle = "white";
         ctx.font = `${48 / scale}px Arial`;
         ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText(
           showTimeUp ? "Time Up!" : showGameOver ? "Game Over!" : "Combo!",
-          canvasW / 2 / scale,
-          canvasH / 2 / scale
+          canvasW / (2 * scale),
+          canvasH / (2 * scale)
         );
         console.warn(`Fallback text rendered for ${imgKey}, loaded: ${gifLoadStatus[imgKey]}`);
       }
@@ -498,7 +486,10 @@ useEffect(() => {
     const loop = () => {
       if (!runningRef.current && !showTimeUp && !showGameOver && !comboImageRef.current.src) return;
 
-      ctx.clearRect(0, 0, canvasW / scale, canvasH / scale);
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation matrix
+      ctx.clearRect(0, 0, canvasW, canvasH); // Clear with unscaled dimensions
+      ctx.scale(scale, scale); // Reapply scaling
+
       drawBackground();
 
       if (!isPaused) {
