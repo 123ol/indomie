@@ -12,6 +12,23 @@ import backgroundSound from "./assets/sounds/INDOMIE THEME SOUND.mp3"; // adjust
 const App = () => {
   const audioRef = useRef(null);
   const [showPopup, setShowPopup] = useState(true);
+  const [isAllowedDevice, setIsAllowedDevice] = useState(true);
+
+  // Allow only mobile (≤768px)
+  useEffect(() => {
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        setIsAllowedDevice(true); // ✅ mobile only
+      } else {
+        setIsAllowedDevice(false); // ❌ block tablets & desktops
+      }
+    };
+
+    checkDevice();
+    window.addEventListener("resize", checkDevice);
+    return () => window.removeEventListener("resize", checkDevice);
+  }, []);
 
   const handlePlay = () => {
     const audio = audioRef.current;
@@ -22,6 +39,20 @@ const App = () => {
     setShowPopup(false);
   };
 
+  if (!isAllowedDevice) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-black text-white text-center p-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-4">🚫 Unsupported Device</h1>
+          <p>
+            This app is only available on{" "}
+            <span className="text-yellow-400">mobile phones</span>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <div className="flex items-center justify-center bg-cover bg-center relative">
@@ -31,12 +62,14 @@ const App = () => {
         {/* Popup Modal */}
         {showPopup && (
           <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className=" rounded-2xl shadow-lg p-6 max-w-sm text-center">
-              <h2 className="text-xl font-bold mb-4 text-yellow-400 leading-snug font-malvie">🎵 ENABLE SOUND </h2>
-            
+            <div className="rounded-2xl shadow-lg p-6 max-w-sm text-center">
+              <h2 className="text-xl font-bold mb-4 text-yellow-400 leading-snug font-malvie">
+                🎵 ENABLE SOUND
+              </h2>
+
               <button
                 onClick={handlePlay}
-                className=" text-white px-6 py-2 rounded-lg shadow  transition bg-yellow-400 leading-snug font-malvie"
+                className="text-white px-6 py-2 rounded-lg shadow transition bg-yellow-400 leading-snug font-malvie"
               >
                 ▶ Play
               </button>
@@ -45,7 +78,6 @@ const App = () => {
         )}
 
         <Routes>
-          {/* Game page with background */}
           <Route
             path="/"
             element={
@@ -54,8 +86,6 @@ const App = () => {
               </div>
             }
           />
-
-          {/* Pack page */}
           <Route
             path="/pack"
             element={
@@ -64,8 +94,6 @@ const App = () => {
               </div>
             }
           />
-
-          {/* Form page */}
           <Route
             path="/form"
             element={
@@ -74,8 +102,6 @@ const App = () => {
               </div>
             }
           />
-
-          {/* Housemate page */}
           <Route
             path="/housemate"
             element={
@@ -84,8 +110,6 @@ const App = () => {
               </div>
             }
           />
-
-          {/* GameTask page */}
           <Route
             path="/GameTask"
             element={
@@ -94,8 +118,6 @@ const App = () => {
               </div>
             }
           />
-
-          {/* Rules page */}
           <Route
             path="/Rules"
             element={

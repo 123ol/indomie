@@ -988,32 +988,6 @@ export default function GameTaskPage() {
             ) : (
               <div className="flex flex-col items-center">
 
-
-                  <motion.div
-        className="absolute top-[10rem] left-4 md:left-6 z-10"
-        initial={{ y: 20, opacity: 0, scale: 0.8 }}
-        animate={diceControlsTop}
-      >
-        <img
-          src={TopDice}
-          alt="Top Dice"
-          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
-        />
-      </motion.div>
-
-      {/* Bottom Dice (bottom-right) */}
-      <motion.div
-        className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
-        initial={{ y: 20, opacity: 0, scale: 0.8 }}
-        animate={diceControlsBottom}
-      >
-        <img
-          src={BottomDice}
-          alt="Bottom Dice"
-          className="w-12 md:w-16 lg:w-20 h-auto object-contain"
-        />
-      </motion.div>
-
                 <div className="flex space-x-4 mb-4">
                   <div className="flex flex-col items-center">
                     
@@ -1024,7 +998,11 @@ export default function GameTaskPage() {
                       {score}
                     </span>
                   </div>
-                  <motion.div
+                  
+                </div>
+                <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="absolute bottom-5" /> 
+                    {/* Top Dice (below logo) */}
+      <motion.div
         className="absolute top-[10rem] left-4 md:left-6 z-10"
         initial={{ y: 20, opacity: 0, scale: 0.8 }}
         animate={diceControlsTop}
@@ -1048,8 +1026,6 @@ export default function GameTaskPage() {
           className="w-12 md:w-16 lg:w-20 h-auto object-contain"
         />
       </motion.div>
-                </div>
-                <img src={Scorereveal} alt={gameOver ? "Game Over" : "Task Transition"} className="absolute bottom-5" />
                 <div className="flex flex-col gap-2 absolute bottom-5 left-0 w-full justify-center items-center">
                   <button
                     onClick={() => {
