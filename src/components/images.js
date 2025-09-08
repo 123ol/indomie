@@ -14,7 +14,7 @@ import Housemate1 from "../assets/Arena Male Character.png";
 import Housemate2 from "../assets/Female carrying Charater.png";
 import pepper from "../assets/Asset 7-8.png";
 import crayfish from "../assets/Crayfsih.png";
-import carrot from "../assets/carot.png";
+import carrot from "../assets/Vector Smart Object4.png";
 
 // Unified mapping of flavors to their images for apple and mango
 const flavorImageMap = {

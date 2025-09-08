@@ -1014,7 +1014,7 @@ export default function GameTaskPage() {
         />
       </motion.div>
 
-      {/* Bottom Dice (bottom-right) */}
+      
       <motion.div
         className="absolute bottom-[4rem] md:bottom-6 right-4 md:right-6 z-10"
         initial={{ y: 20, opacity: 0, scale: 0.8 }}

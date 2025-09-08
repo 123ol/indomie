@@ -202,8 +202,8 @@ function BordGame({
     () => ({
       basket: {
         offset: basketHeight * scale,
-        w: 180 * scale,
-        h: 150 * scale,
+        w: 150 * scale,
+        h: 120 * scale,
         speed: 7 * scale,
       },
       entity: { minX: 20 * scale, r: 35 * scale, startY: 20 * scale },
