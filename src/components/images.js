@@ -2,25 +2,26 @@ import Scorereveal from "../assets/Score reveal.png";
 import backgroundImage from "../assets/Other stage background.webp";
 import replay from "../assets/Replay.png";
 import task from "../assets/Next task button.png";
-import mangoImg from "../assets/Layer 3 copy 5.png";
-import nutImg from "../assets/Egg.png";
+import chicken from "../assets/Layer 3 copy 5.png";
+import leaf from "../assets/Asset 8-8.png";
+import egg from "../assets/Egg.png";
 import bombImg from "../assets/Layer 5.png";
 import bombImg2 from "../assets/Layer 10.png";
 import bombImg3 from "../assets/Layer 4 copy.png";
 import Crayfish from "../assets/Crayfish.png";
 import Peppersoup from "../assets/Pepper soup noodle.png";
 import OrientalNoodle from "../assets/Oriental Noodle.png";
-import Housemate1 from "../assets/Arena Male Character.png";
-import Housemate2 from "../assets/Female carrying Charater.png";
-import pepper from "../assets/Asset 7-8.png";
+import Housemate1 from "../assets/Arena Male Character.webp";
+import Housemate2 from "../assets/Female carrying Charater.webp";
+import pepper from "../assets/Vector Smart Object4.png";
 import crayfish from "../assets/Crayfsih.png";
-import carrot from "../assets/Vector Smart Object4.png";
+import carrot from "../assets/pepper.png";
 
 // Unified mapping of flavors to their images for apple and mango
 const flavorImageMap = {
-  Crayfish: { apple: Crayfish, mango: crayfish  },
-  Peppersoup: { apple: Peppersoup, mango: pepper },
-  Oriental: { apple: OrientalNoodle, mango: carrot },
+  Crayfish: { apple: Crayfish, mango: crayfish ,nut:egg },
+  Peppersoup: { apple: Peppersoup, mango: pepper,nut:chicken },
+  Oriental: { apple: OrientalNoodle, mango: carrot,nut:leaf  },
 };
 
 // Mapping of housemate names to their images
@@ -48,7 +49,7 @@ export const getImages = (taskNumber, selectedFlavors) => {
   return {
     apple: Object.assign(new Image(), { src: images.apple }),
     mango: Object.assign(new Image(), { src: images.mango }), // Always matches the selected flavor
-    // nut: Object.assign(new Image(), { src: nutImg }),
+    nut: Object.assign(new Image(), { src: images.nut }),
     bomb: Object.assign(new Image(), { src: bombImg }),
     bomb2: Object.assign(new Image(), { src: bombImg2 }),
     bomb3: Object.assign(new Image(), { src: bombImg3 }),
