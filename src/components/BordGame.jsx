@@ -202,11 +202,17 @@ function BordGame({
     () => ({
       basket: {
         offset: basketHeight * scale,
-        w: 150 * scale,
+        w: 300 * scale,
         h: 120 * scale,
         speed: 7 * scale,
       },
-      entity: { minX: 20 * scale, r: 35 * scale, startY: 20 * scale },
+      entity: {
+        minX: 20 * scale,
+        r: 35 * scale, // Used for collision detection
+        width: 120 * scale, // Increased width for 90px
+        height: 70 * scale, // Unchanged height for 70px
+        startY: 20 * scale,
+      },
       lineWidth: 4 * scale,
     }),
     [scale, basketHeight]
@@ -314,6 +320,8 @@ function BordGame({
             y: -scaled.entity.startY,
             vy,
             r: scaled.entity.r,
+            width: scaled.entity.width,
+            height: scaled.entity.height,
             type: bombType,
           });
           console.log(`Spawned bomb (${bombType}) at x: ${x}, vy: ${vy}, Task: ${currentTask}`);
@@ -324,6 +332,8 @@ function BordGame({
             y: -scaled.entity.startY,
             vy,
             r: scaled.entity.r,
+            width: scaled.entity.width,
+            height: scaled.entity.height,
             type,
           });
           console.log(`Spawned fruit (${type}) at x: ${x}, vy: ${vy}, Task: ${currentTask}`);
@@ -409,10 +419,10 @@ function BordGame({
         ctx.save();
         ctx.drawImage(
           img,
-          (fruit.x - fruit.r) / scale,
-          (fruit.y - fruit.r) / scale,
-          (fruit.r * 2) / scale,
-          (fruit.r * 2) / scale
+          (fruit.x - fruit.width / 2) / scale,
+          (fruit.y - fruit.height / 2) / scale,
+          fruit.width / scale,
+          fruit.height / scale
         );
         ctx.restore();
       }
@@ -424,10 +434,10 @@ function BordGame({
         ctx.save();
         ctx.drawImage(
           img,
-          (obstacle.x - obstacle.r) / scale,
-          (obstacle.y - obstacle.r) / scale,
-          (obstacle.r * 2) / scale,
-          (obstacle.r * 2) / scale
+          (obstacle.x - obstacle.width / 2) / scale,
+          (obstacle.y - obstacle.height / 2) / scale,
+          obstacle.width / scale,
+          obstacle.height / scale
         );
         ctx.restore();
       }
@@ -536,7 +546,7 @@ function BordGame({
       // Draw entities
       fruitsRef.current.forEach(drawFruit);
       obstaclesRef.current.forEach(drawObstacle);
-      drawBasket(basketRef.current); // Fixed: Use basketRef.current
+      drawBasket(basketRef.current);
       drawNotification();
 
       rafRef.current = requestAnimationFrame(loop);

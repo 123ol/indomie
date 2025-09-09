@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
-import Transition from "../assets/Na you get am.gif";
 import Housemate1 from "../assets/Male Character.png"; // Placeholder for first housemate image
 import Housemate2 from "../assets/Female Charater.png"; // Placeholder for second housemate image
 

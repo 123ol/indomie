@@ -1,6 +1,6 @@
-import NaYouGetAm from "../assets/Na you get am.gif";
+import NaYouGetAm from "../assets/Na-you-get-am.gif";
 import Flavour from "../assets/Flavour.gif";
-import SpiceHit from "../assets/Spice hit.gif";
+import SpiceHit from "../assets/Spicy-hit.gif";
 import TimeUpGif from "../assets/timeover.png"; 
 import GameOverGif from "../assets/gameover.png"; 
 import ComboSound from "../assets/sounds/COMBO SOUND.mp3";

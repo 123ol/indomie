@@ -7,7 +7,7 @@ import { doc, setDoc } from "firebase/firestore";
 import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
 import ContinueButton from "../assets/Continue.png";
-import Transition from "../assets/Na you get am.gif";
+
 
 function Form() {
   const navigate = useNavigate();
@@ -368,7 +368,7 @@ function Form() {
             transition={{ duration: 0.6, ease: "easeInOut" }}
             className="absolute inset-0 z-50 flex items-center justify-center"
           >
-            <img src={Transition} alt="Transition" className="w-full h-full object-cover" />
+           
           </motion.div>
         )}
       </AnimatePresence>
