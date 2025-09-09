@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import backgroundImage from "../assets/Other stage background.webp";
 import indomieLogo from "../assets/Large Indomie log.png";
@@ -12,7 +12,8 @@ import Transition from "../assets/Na you get am.gif";
 function Form() {
   const navigate = useNavigate();
   const [showWave, setShowWave] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(true); // Toggle between sign-up and login
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,6 +21,7 @@ function Form() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
@@ -28,7 +30,44 @@ function Form() {
   };
 
   const handleSubmit = async () => {
-    // Client-side validation
+    setError("");
+    setSuccessMessage("");
+
+    if (isResetPassword) {
+      // Password reset flow
+      if (!formData.email) {
+        setError("Please enter your email");
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError("Please enter a valid email");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        await sendPasswordResetEmail(auth, formData.email);
+        setSuccessMessage(
+          "Password reset email sent! Please check your inbox or spam folder for the email."
+        );
+        setFormData({ name: "", email: "", phone: "", password: "" });
+      } catch (error) {
+        console.error("Password reset error:", error);
+        const errorMessages = {
+          "auth/invalid-email": "Invalid email format.",
+          "auth/user-not-found": "No account found with this email.",
+          "auth/too-many-requests": "Too many attempts. Please try again later.",
+        };
+        setError(errorMessages[error.code] || `Password reset failed: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Client-side validation for sign-up/login
     if (!isSignUp && (!formData.email || !formData.password)) {
       setError("Please enter email and password");
       return;
@@ -118,7 +157,16 @@ function Form() {
 
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);
+    setIsResetPassword(false);
     setError("");
+    setSuccessMessage("");
+    setFormData({ name: "", email: "", phone: "", password: "" });
+  };
+
+  const handleForgotPassword = () => {
+    setIsResetPassword(true);
+    setError("");
+    setSuccessMessage("");
     setFormData({ name: "", email: "", phone: "", password: "" });
   };
 
@@ -157,7 +205,7 @@ function Form() {
         />
       </motion.div>
 
-      <div className="flex flex-col items-center justify-center space-y-6 mt-[30%] ">
+      <div className="flex flex-col items-center justify-center space-y-6 mt-[30%]">
         <motion.div
           className="flex flex-col items-center justify-center space-y-6 w-full max-w-md p-6 rounded-xl"
           style={{
@@ -175,12 +223,16 @@ function Form() {
             className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-400 leading-snug font-malvie text-center"
             variants={inputVariants}
           >
-            {isSignUp ? "SIGN UP FILLING YOUR ENTRY HOUSEMATE" : "LOG IN FILLING YOUR ENTRY HOUSEMATE"}
+            {isResetPassword
+              ? "RESET YOUR PASSWORD"
+              : isSignUp
+              ? "SIGN UP FILLING YOUR ENTRY HOUSEMATE"
+              : "LOG IN FILLING YOUR ENTRY HOUSEMATE"}
           </motion.h2>
 
           {error && (
             <motion.p
-              className="text-red-300 text-sm"
+              className="text-red-300 text-sm text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
@@ -189,7 +241,18 @@ function Form() {
             </motion.p>
           )}
 
-          {isSignUp && (
+          {successMessage && (
+            <motion.p
+              className="text-green-300 text-sm text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {successMessage}
+            </motion.p>
+          )}
+
+          {!isResetPassword && isSignUp && (
             <motion.div className="w-full" variants={inputVariants}>
               <label htmlFor="name" className="block text-yellow-400 leading-snug font-malvie mb-2">
                 Name
@@ -221,7 +284,7 @@ function Form() {
             />
           </motion.div>
 
-          {isSignUp && (
+          {!isResetPassword && isSignUp && (
             <motion.div className="w-full" variants={inputVariants}>
               <label htmlFor="phone" className="block text-yellow-400 leading-snug font-malvie mb-2">
                 Phone Number
@@ -238,48 +301,62 @@ function Form() {
             </motion.div>
           )}
 
-          <motion.div className="w-full" variants={inputVariants}>
-            <label htmlFor="password" className="block text-yellow-400 leading-snug font-malvie mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              placeholder="Enter your password"
-            />
-          </motion.div>
+          {!isResetPassword && (
+            <motion.div className="w-full" variants={inputVariants}>
+              <label htmlFor="password" className="block text-yellow-400 leading-snug font-malvie mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full p-3 rounded-lg bg-[#8B0000] border-2 border-[#FF4040] text-yellow-400 leading-snug font-malvie placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                placeholder="Enter your password"
+              />
+            </motion.div>
+          )}
 
-        
+          {!isResetPassword && !isSignUp && (
+            <motion.button
+              onClick={handleForgotPassword}
+              className="text-yellow-400 text-sm underline leading-snug font-malvie"
+              variants={inputVariants}
+            >
+              Forgot Password?
+            </motion.button>
+          )}
 
           <motion.button
             onClick={toggleAuthMode}
-            className="text-yellow-400 text-sm underline  leading-snug font-malvie"
+            className="text-yellow-400 text-sm underline leading-snug font-malvie"
             variants={inputVariants}
           >
-            {isSignUp ? "Already have an account? Log in" : "Need an account? Sign up"}
+            {isResetPassword
+              ? "Back to Login"
+              : isSignUp
+              ? "Already have an account? Log in"
+              : "Need an account? Sign up"}
           </motion.button>
         </motion.div>
 
-          <motion.div variants={buttonVariants} className="absolute bottom-2 left-0 w-full flex justify-center ">
-            <motion.button
-              onClick={handleSubmit}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              disabled={isLoading}
-            >
-              <motion.img
-                src={ContinueButton}
-                alt="Submit Button"
-                className={`w-56 object-contain ${isLoading ? "opacity-50" : ""}`}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
-              />
-            </motion.button>
-          </motion.div>
+        <motion.div variants={buttonVariants} className="absolute bottom-2 left-0 w-full flex justify-center">
+          <motion.button
+            onClick={handleSubmit}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            disabled={isLoading}
+          >
+            <motion.img
+              src={ContinueButton}
+              alt="Submit Button"
+              className={`w-56 object-contain ${isLoading ? "opacity-50" : ""}`}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
+            />
+          </motion.button>
+        </motion.div>
       </div>
 
       <AnimatePresence>
@@ -291,7 +368,7 @@ function Form() {
             transition={{ duration: 0.6, ease: "easeInOut" }}
             className="absolute inset-0 z-50 flex items-center justify-center"
           >
-           
+            <img src={Transition} alt="Transition" className="w-full h-full object-cover" />
           </motion.div>
         )}
       </AnimatePresence>

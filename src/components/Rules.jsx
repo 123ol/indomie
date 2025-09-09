@@ -6,8 +6,8 @@ import indomieLogo from "../assets/Large Indomie log.png";
 import gameRule1 from "../assets/Game rukle.webp";
 import gameRule2 from "../assets/Game rule 2.webp";
 import ContinueButton from "../assets/Continue.png";
-import Right from "../assets/Right Button.png";
-import Left from "../assets/Left Button.png";
+import Right from "../assets/NEXT.png";
+import Left from "../assets/Back.png";
 import TopDice from "../assets/Dicetop.png";
 import BottomDice from "../assets/Dicebottom.png";
 
@@ -198,7 +198,7 @@ function Rules() {
                   <motion.img
                     src={Right}
                     alt="Next Button"
-                    className="w-10 md:w-16 lg:w-16 object-contain"
+                    className="w-24 md:w-16 lg:w-16 object-contain"
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{
                       duration: 1.5,
@@ -230,7 +230,7 @@ function Rules() {
                 />
 
                 {/* Buttons overlay at bottom */}
-                <div className="absolute bottom-0 left-2 flex gap-16">
+                <div className="absolute bottom-0 left-2 flex gap-10">
                   {/* Back */}
                   <motion.button
                     onClick={handleBack}
@@ -240,7 +240,7 @@ function Rules() {
                     <motion.img
                       src={Left}
                       alt="Back Button"
-                      className="w-12 md:w-16 lg:w-16 object-contain"
+                      className="w-24 md:w-16 lg:w-16 object-contain"
                       animate={{ scale: [1, 1.05, 1] }}
                       transition={{
                         duration: 1.5,
@@ -261,7 +261,7 @@ function Rules() {
                       <motion.img
                         src={ContinueButton}
                         alt="Continue Button"
-                        className="w-52 object-fill"
+                        className="w-48 object-fill"
                         animate={{ scale: [1, 1.05, 1] }}
                         transition={{
                           duration: 1.5,
