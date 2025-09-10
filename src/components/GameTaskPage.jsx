@@ -403,48 +403,43 @@ export default function GameTaskPage() {
     }
   }, [leaderboardFilter]);
 
-  const saveHighScoreToServer = useCallback(
-    async (entry) => {
-      if (!currentUser) {
-        console.warn("No authenticated user, redirecting to login");
-        navigate("/form");
-        return;
-      }
-      try {
-        const scoreEntry = {
-          ...entry,
-          player: currentUser.displayName || "Player",
-          uid: currentUser.uid,
-          date: new Date().toISOString(),
-        };
-        const scoreDocRef = doc(db, "scores", currentUser.uid);
-        const scoreDoc = await getDoc(scoreDocRef);
+ const saveHighScoreToServer = useCallback(
+  async (entry) => {
+    if (!currentUser) {
+      console.warn("No authenticated user, redirecting to login");
+      navigate("/form");
+      return;
+    }
+    try {
+      const scoreEntry = {
+        ...entry,
+        player: currentUser.displayName || "Player",
+        uid: currentUser.uid,
+        date: new Date().toISOString(),
+      };
+      const scoreDocRef = doc(db, "scores", currentUser.uid);
+      const scoreDoc = await getDoc(scoreDocRef);
+      let newTotal = scoreEntry.score; // Initialize with new score
+      let existingScore = 0;
 
-        if (scoreDoc.exists()) {
-          const existingScore = scoreDoc.data().score;
-          console.log(`Existing score: ${existingScore}, New score: ${scoreEntry.score}`);
-          if (existingScore >= scoreEntry.score) {
-            console.log(`New score (${scoreEntry.score}) is not higher than existing score (${existingScore}), skipping update`);
-            setNotification({
-              type: "info",
-              message: `Your score of ${scoreEntry.score} is not higher than your previous score of ${existingScore}. Keep trying!`,
-            });
-            await fetchLeaderboardFromServer();
-            return;
-          }
-        }
-
-        await setDoc(scoreDocRef, scoreEntry, { merge: true });
-        console.log(`Saved score to Firestore: ${scoreEntry.score}`);
-        setNotification({ type: "success", message: `New high score of ${scoreEntry.score} saved!` });
-        await fetchLeaderboardFromServer();
-      } catch (err) {
-        console.error("Failed to save score to Firestore:", err.message);
-        setNotification({ type: "error", message: "Failed to save score: " + err.message });
+      if (scoreDoc.exists()) {
+        existingScore = scoreDoc.data().score;
+        console.log(`Existing score: ${existingScore}, Adding new score: ${scoreEntry.score}`);
+        newTotal = existingScore + scoreEntry.score; // Add new score to existing
       }
-    },
-    [currentUser, fetchLeaderboardFromServer, navigate]
-  );
+
+      const updatedEntry = { ...scoreEntry, score: newTotal };
+      await setDoc(scoreDocRef, updatedEntry, { merge: true });
+      console.log(`Added score to Firestore: ${scoreEntry.score}, New total: ${newTotal}`);
+      setNotification({ type: "success", message: `Added ${scoreEntry.score} points! New total: ${newTotal}` });
+      await fetchLeaderboardFromServer();
+    } catch (err) {
+      console.error("Failed to save score to Firestore:", err.message);
+      setNotification({ type: "error", message: "Failed to save score: " + err.message });
+    }
+  },
+  [currentUser, fetchLeaderboardFromServer, navigate]
+);
 
   const getUserRank = useCallback(() => {
     if (!currentUser || !leaderboard.length) return null;
@@ -1236,57 +1231,66 @@ export default function GameTaskPage() {
       This Month
     </button>
   </div>
-
-  {/* Top 3 podium */}
-  {(leaderboard[0] || leaderboard[1] || leaderboard[2]) && (
-    <div className="flex justify-center items-end gap-4 sm:gap-8 w-full">
-      {/* 2nd place */}
-      {leaderboard[1] && (
-        <div className="flex flex-col items-center translate-y-6 sm:translate-y-8">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-yellow-600 to-yellow-400 border-2 sm:border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
-            2
-          </div>
-          <p className="text-[10px] sm:text-xs text-white mt-1">
-            @{leaderboard[1].player}
-          </p>
-          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
-            {leaderboard[1].score}
-          </p>
+{/* Top 3 podium */}
+{(leaderboard[0] || leaderboard[1] || leaderboard[2]) && (
+  <div className="flex justify-center items-end gap-4 sm:gap-8 w-full">
+    {/* 2nd place */}
+    {leaderboard[1] && (
+      <div className="flex flex-col items-center translate-y-6 sm:translate-y-8 max-w-[80px] sm:max-w-[100px] text-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-yellow-600 to-yellow-400 border-2 sm:border-4 border-yellow-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+          2
         </div>
-      )}
+        <p
+          className="text-[10px] sm:text-xs text-white mt-1 truncate w-full"
+          title={`@${leaderboard[1].player}`}
+        >
+          @{leaderboard[1].player}
+        </p>
+        <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+          {leaderboard[1].score}
+        </p>
+      </div>
+    )}
 
-      {/* 1st place */}
-      {leaderboard[0] && (
-        <div className="flex flex-col items-center">
-          <span className="text-2xl sm:text-4xl mb-2">👑</span>
-          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-yellow-500 to-yellow-300 border-2 sm:border-4 border-yellow-200 flex items-center justify-center text-white font-bold text-2xl sm:text-3xl shadow-lg">
-            1
-          </div>
-          <p className="text-[10px] sm:text-xs text-white mt-2">
-            @{leaderboard[0].player}
-          </p>
-          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
-            {leaderboard[0].score}
-          </p>
+    {/* 1st place */}
+    {leaderboard[0] && (
+      <div className="flex flex-col items-center max-w-[100px] sm:max-w-[120px] text-center">
+        <span className="text-2xl sm:text-4xl mb-2">👑</span>
+        <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-b from-yellow-500 to-yellow-300 border-2 sm:border-4 border-yellow-200 flex items-center justify-center text-white font-bold text-2xl sm:text-3xl shadow-lg">
+          1
         </div>
-      )}
+        <p
+          className="text-[10px] sm:text-xs text-white mt-2 truncate w-full"
+          title={`@${leaderboard[0].player}`}
+        >
+          @{leaderboard[0].player}
+        </p>
+        <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+          {leaderboard[0].score}
+        </p>
+      </div>
+    )}
 
-      {/* 3rd place */}
-      {leaderboard[2] && (
-        <div className="flex flex-col items-center translate-y-6 sm:translate-y-8">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-orange-600 to-orange-400 border-2 sm:border-4 border-orange-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
-            3
-          </div>
-          <p className="text-[10px] sm:text-xs text-white mt-1">
-            @{leaderboard[2].player}
-          </p>
-          <p className="text-yellow-400 font-bold text-xs sm:text-sm">
-            {leaderboard[2].score}
-          </p>
+    {/* 3rd place */}
+    {leaderboard[2] && (
+      <div className="flex flex-col items-center translate-y-6 sm:translate-y-8 max-w-[80px] sm:max-w-[100px] text-center">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-orange-600 to-orange-400 border-2 sm:border-4 border-orange-300 flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+          3
         </div>
-      )}
-    </div>
-  )}
+        <p
+          className="text-[10px] sm:text-xs text-white mt-1 truncate w-full"
+          title={`@${leaderboard[2].player}`}
+        >
+          @{leaderboard[2].player}
+        </p>
+        <p className="text-yellow-400 font-bold text-xs sm:text-sm">
+          {leaderboard[2].score}
+        </p>
+      </div>
+    )}
+  </div>
+)}
+
 </div>
 
 
