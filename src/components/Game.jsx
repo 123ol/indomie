@@ -144,16 +144,16 @@ function Game() {
   }, [packControls1, packControls2, packControls3, diceControlsTop, diceControlsBottom]);
 
   return (
-    <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] relative"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
-        width: "100%",
-      }}
-    >
+   <div
+  className="w-full min-h-screen flex flex-col justify-between relative"
+  style={{
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "top center",
+    backgroundRepeat: "no-repeat",
+    width: "100%",
+  }}
+>
       {/* Top: Logo */}
       <motion.div
         className="p-4 mb-8 relative z-10"
