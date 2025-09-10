@@ -843,18 +843,22 @@ export default function GameTaskPage() {
           {assetError}
         </div>
       )}
-      {notification && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className={`absolute top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg text-white ${
-            notification.type === "error" ? "bg-red-500" : notification.type === "success" ? "bg-green-500" : "bg-blue-500"
-          }`}
-        >
-          {notification.message}
-        </motion.div>
-      )}
+  {notification && (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className="font-malvie absolute top-4 left-1/2 transform -translate-x-1/2 p-4 rounded-lg text-white shadow-lg border border-yellow-900"
+    style={{
+      backgroundImage: `url(${leaderbg})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    {notification.message}
+  </motion.div>
+)}
+
       <div className="flex flex-wrap w-full max-w-4xl items-center justify-between mb-4 gap-4">
         {!gameActive && (
           <motion.div
@@ -928,7 +932,7 @@ export default function GameTaskPage() {
                 <motion.img
                   src={taskImages[currentTask]}
                   alt={`Start Task ${currentTask}`}
-                  className="w-56 h-full object-cover"
+                  className="w-56 h-full object-cover z-10"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 1.5, repeat: Infinity, repeatType: "mirror" }}
                 />
@@ -981,7 +985,7 @@ export default function GameTaskPage() {
                   <img
                     src={taskImages[1]}
                     alt="Task 1 button"
-                    className="w-56 object-contain"
+                    className="w-56 object-contain z-10"
                   />
                 </button>
               </>
@@ -1051,7 +1055,7 @@ export default function GameTaskPage() {
                       <img
                         src={taskImages[currentTask + 1]}
                         alt={`Task ${currentTask + 1} button`}
-                        className="w-56 h-full object-cover"
+                        className="w-56 h-full object-cover z-10"
                       />
                     </button>
                   )}

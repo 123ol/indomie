@@ -202,15 +202,15 @@ function BordGame({
     () => ({
       basket: {
         offset: basketHeight * scale,
-        w: 300 * scale,
-        h: 120 * scale,
+        w: 250 * scale,
+        h: 130 * scale,
         speed: 7 * scale,
       },
       entity: {
         minX: 20 * scale,
         r: 35 * scale, // Used for collision detection
-        width: 120 * scale, // Increased width for 90px
-        height: 70 * scale, // Unchanged height for 70px
+        width: 100 * scale, // Increased width for 90px
+        height: 50 * scale, // Unchanged height for 70px
         startY: 20 * scale,
       },
       lineWidth: 4 * scale,
