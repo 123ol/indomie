@@ -452,7 +452,7 @@ function BordGame({
         ? gameOverImageRef.current
         : comboImageRef.current;
       const imgKey = showTimeUp ? "timeUp" : showGameOver ? "gameOver" : "combo";
-    const baseWidth = showGameOver ? 150 * scale : canvasW / 3; // Approx 266px at BASE_CANVAS_W=800
+   const baseWidth = showGameOver || showTimeUp ? 150 * scale : canvasW / 3; // 150px for Game Over and Time Up, ~266px for Combo
       const baseHeight = baseWidth; // Square aspect ratio
       const imgWidth = baseWidth * bounceScale / scale;
       const imgHeight = baseHeight * bounceScale / scale;
