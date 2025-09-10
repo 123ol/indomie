@@ -156,7 +156,7 @@ function Game() {
 >
       {/* Top: Logo */}
       <motion.div
-        className="p-4 mb-8 relative z-10"
+        className="p-4 mb-8 relative  z-10"
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
@@ -170,7 +170,7 @@ function Game() {
 
       {/* Top Dice (below logo) */}
       <motion.div
-        className="absolute top-[23rem]  left-4 md:left-6 z-10"
+        className="absolute top-[35%]  left-4 md:left-6 z-10"
         initial={{ y: 20, opacity: 0, scale: 0.8 }}
         animate={diceControlsTop}
       >
@@ -194,9 +194,9 @@ function Game() {
         />
       </motion.div>
 
-      <div className="flex flex-col items-center justify-center space-y-6 pt-24 md:pt-40">
+      <div className="flex flex-col items-center justify-center space-y-6 pt-10 md:pt-40">
         <motion.div
-          className="text-center pb-4 mb-60"
+          className="text-center  mb-48"
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.3, type: "spring" }}
