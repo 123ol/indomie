@@ -95,13 +95,12 @@ function Housemate() {
 
   return (
     <div
-      className="w-full flex flex-col  h-[110vh] p-4"
+      className="w-full flex flex-col h-full min-h-screen relative"
       style={{
         backgroundImage: `url(${backgroundImage})`,
         backgroundSize: "cover",
-        backgroundPosition: "top center",
+        backgroundPosition: "center", // better centering than top
         backgroundRepeat: "no-repeat",
-        width: "100%",
       }}
     >
       {/* Notification */}
@@ -145,7 +144,7 @@ function Housemate() {
         >
           {/* Title */}
           <motion.h2
-            className="text-3xl font-bold text-yellow-400 leading-snug font-malvie py-10"
+            className="text-3xl font-bold text-yellow-400 leading-snug font-malvie pb-2"
             variants={imageVariants}
             custom={0}
           >
@@ -153,7 +152,7 @@ function Housemate() {
           </motion.h2>
 
           {/* Housemate Images */}
-          <div className="flex justify-center items-center space-x-4 md:space-x-6 h-fit">
+          <div className="flex justify-center items-center space-x-4 md:space-x-6 h-fit pb-2">
             {housemates.map((housemate, i) => (
               <div key={housemate.name} className="relative">
                 <motion.img
@@ -169,7 +168,7 @@ function Housemate() {
                 <AnimatePresence>
                   {selectedHousemate === housemate.name && (
                     <motion.div
-                      className="absolute inset-0 border-4 border-[#FF4040] rounded-lg mb-4"
+                      className="absolute inset-0 border-4 border-[#FF4040] rounded-lg mb-2"
                       initial="hidden"
                       animate="visible"
                       exit="hidden"
@@ -190,7 +189,7 @@ function Housemate() {
                 initial="hidden"
                 animate="visible"
                 exit="hidden"
-                className="absolute bottom-5 left-0 w-full flex justify-center"
+                className="absolute bottom-1 left-0 w-full flex justify-center"
               >
                 <motion.button
                   onClick={handleContinue}
