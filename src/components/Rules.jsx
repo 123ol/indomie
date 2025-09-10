@@ -117,16 +117,15 @@ function Rules() {
   };
 
   return (
-    <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] relative"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
-        width: "100%",
-      }}
-    >
+      <div
+    className="w-full flex flex-col h-full min-h-screen relative"
+    style={{
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center", // better centering than top
+      backgroundRepeat: "no-repeat",
+    }}
+  >
       {/* Top: Logo */}
       <motion.div
         className="p-4"

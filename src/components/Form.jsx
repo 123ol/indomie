@@ -183,15 +183,15 @@ function Form() {
 
   return (
     <div
-      className="w-full flex flex-col min-h-screen h-[120vh] p-4"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
-        width: "100%",
-      }}
-    >
+  className="w-full flex flex-col min-h-screen relative px-2 "
+  style={{
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  }}
+>
+
       <motion.div
         className="p-4"
         initial={{ x: -100, opacity: 0 }}
@@ -207,7 +207,7 @@ function Form() {
 
       <div className="flex flex-col items-center justify-center space-y-6 mt-[30%]">
         <motion.div
-          className="flex flex-col items-center justify-center space-y-6 w-full max-w-md p-6 rounded-xl"
+          className="flex flex-col items-center justify-center space-y-6 w-full max-w-md p-6 rounded-xl mb-[10rem]"
           style={{
             backgroundColor: "#8B0000",
             boxShadow: "0 0 20px 5px rgba(255, 99, 71, 0.7)",

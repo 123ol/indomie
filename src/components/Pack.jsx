@@ -70,18 +70,17 @@ function Pack() {
 
   return (
     <div
-      className="w-full flex flex-col min-h-[100vh] md:h-[160vh] p-2 "
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: "cover",
-        backgroundPosition: "top center",
-        backgroundRepeat: "no-repeat",
-        width: "100%",
-      }}
-    >
+    className="w-full flex flex-col h-full min-h-screen relative px-2"
+    style={{
+      backgroundImage: `url(${backgroundImage})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center", // better centering than top
+      backgroundRepeat: "no-repeat",
+    }}
+  >
       {/* Logo */}
       <motion.div
-        className=""
+        className="p-4"
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 1, ease: "easeOut" }}
